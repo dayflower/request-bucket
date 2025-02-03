@@ -1,0 +1,56 @@
+{
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "timestamp": {
+        "type": "date"
+      },
+      "bucket": {
+        "type": "keyword"
+      },
+      "request": {
+        "type": "nested",
+        "properties": {
+          "method": {
+            "type": "keyword"
+          },
+          "protocol": {
+            "type": "keyword"
+          },
+          "host": {
+            "type": "text"
+          },
+          "port": {
+            "type": "integer"
+          },
+          "pathQuery": {
+            "type": "text"
+          },
+          "path": {
+            "type": "text"
+          },
+          "args": {
+            "type": "text"
+          },
+          "queryString": {
+            "type": "text"
+          },
+          "query": {
+            "type": "nested"
+          },
+          "headers": {
+            "type": "nested"
+          },
+          "bodyRaw": {
+            "type": "text"
+          },
+          "bodyJson": {
+            "type": "nested"
+          }
+        }
+      }
+    }
+  }
+}

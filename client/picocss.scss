@@ -1,0 +1,79 @@
+$viewport-sm: 510px;
+$viewport-md: 700px;
+$viewport-lg: 950px;
+$root-font-size-sm: 106.25%;
+$root-font-size-md: 112.5%;
+$root-font-size-lg: 118.75%;
+
+@use 'sass:color';
+
+@use "@yohns/picocss/scss/pico" with (
+  $theme-color: "azure",
+
+  $breakpoints: (
+    // Small (landscape phones)
+    // Font size: 17px
+    sm:
+      (
+        breakpoint: 576px,
+        viewport: $viewport-sm,
+        root-font-size: $root-font-size-sm
+      ),
+    // Medium (tablets)
+    // Font size: 18px
+    md:
+      (
+        breakpoint: 768px,
+        viewport: $viewport-md,
+        root-font-size: $root-font-size-md
+      ),
+    // Large
+    // Font size: 19px
+    lg:
+      (
+        breakpoint: 1024px,
+        viewport: $viewport-lg,
+        root-font-size: $root-font-size-md
+      ),
+    // Extra large
+    // Font size: 20px
+    xl:
+      (
+        breakpoint: 1280px,
+        viewport: $viewport-lg,
+        root-font-size: $root-font-size-md
+      ),
+    // Extra extra large
+    // Font size: 21px
+    xxl:
+      (
+        breakpoint: 1536px,
+        viewport: $viewport-lg,
+        root-font-size: $root-font-size-md
+      ),
+  )
+);
+
+@use "@yohns/picocss/scss/colors" as *;
+@use "@yohns/picocss/scss/colors/utilities";
+
+:root {
+  --pico-form-element-spacing-vertical: 0.25rem;
+  --pico-form-element-spacing-horizontal: 0.6rem;
+}
+
+:root:not([data-theme="dark"]) {
+  --pico-form-element-background-color: #{color.mix($slate-50, $white, 60%)};
+  --pico-form-element-readonly-background-color: #{rgba(
+      color.mix($slate-50, $white, 60%),
+      0.7
+    )};
+}
+
+[data-theme="dark"] {
+  --pico-form-element-background-color: #{color.mix($slate-900, $slate-800, 10%)};
+  --pico-form-element-readonly-background-color: #{rgba(
+      color.mix($slate-900, $slate-800, 10%),
+      0.7
+    )};
+}

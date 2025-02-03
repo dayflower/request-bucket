@@ -1,0 +1,54 @@
+{
+  "name": "request-bucket",
+  "private": true,
+  "version": "0.1.0",
+  "license": "MIT",
+  "author": "dayflower",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dayflower/request-bucket.git"
+  },
+  "keywords": [],
+  "homepage": "https://github.com/dayflower/request-bucket",
+  "bugs": {
+    "url": "https://github.com/dayflower/request-bucket/issues"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env --ignore=./vite.config.ts* --ignore=./client --clear-screen=false server/dev.ts",
+    "prod": "tsx --env-file=.env server/prod.ts",
+    "build:client": "tsc --noEmit -p tsconfig.app.json && vite build --emptyOutDir",
+    "build:server": "tsc --noEmit && esbuild --bundle --external:./node_modules/* --format=esm --platform=node --target=es2022,node20 server/prod.ts --outfile=dist/index.mjs",
+    "lint": "biome lint .",
+    "preview": "vite preview",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@fastify/static": "^8.0.4",
+    "@opensearch-project/opensearch": "^3.2.0",
+    "base-x": "^5.0.0",
+    "fastify": "^5.2.1",
+    "fastify-raw-body": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.12.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@yohns/picocss": "^2.2.9",
+    "esbuild": "^0.24.2",
+    "globals": "^15.14.0",
+    "react-router": "^7.1.4",
+    "sass": "^1.83.4",
+    "tsx": "^4.19.2",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.5"
+  }
+}
