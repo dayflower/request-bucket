@@ -31,6 +31,7 @@
     "@opensearch-project/opensearch": "^3.2.0",
     "base-x": "^5.0.0",
     "fastify": "^5.2.1",
+    "fastify-graceful-shutdown": "^4.0.1",
     "fastify-raw-body": "^5.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

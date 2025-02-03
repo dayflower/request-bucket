@@ -63,7 +63,6 @@ export const devServer = async ({
     port,
     registerPlugins: async (server, publicDir) => {
       server.register(devServerPlugin, { publicDir });
-      console.log('registered');
     },
   });
 };

@@ -1,4 +1,5 @@
 import fastify, { type FastifyInstance } from 'fastify';
+import fastifyGracefulShutdown from 'fastify-graceful-shutdown';
 
 const initFastify = () => {
   return fastify({ logger: true });
@@ -30,7 +31,14 @@ export const invoke = async ({
 }) => {
   const server = initFastify();
 
+  await server.register(fastifyGracefulShutdown);
   await registerPlugins(server, publicDir);
+
+  server.after(() => {
+    server.gracefulShutdown((signal) => {
+      server.log.info(`Received signal: ${signal}`);
+    });
+  });
 
   if (main.setup) {
     const res = main.setup(server);
@@ -40,7 +48,7 @@ export const invoke = async ({
   }
 
   try {
-    await server.listen({ port });
+    await server.listen({ host: '0.0.0.0', port });
   } catch (err) {
     server.log.error(err);
     process.exit(1);
