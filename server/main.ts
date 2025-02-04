@@ -17,6 +17,11 @@ const envValue = (key: string): string => {
 
 const OPENSEARCH_INDEX = envValue('OPENSEARCH_INDEX');
 
+const IGNORE_HEADER_PREFIX = (process.env.IGNORE_HEADER_PREFIX ?? '')
+  .split(/\s*,\s*/)
+  .filter((prefix) => prefix !== '')
+  .map((prefix) => prefix.toLowerCase());
+
 const createOpenSearchClient = () => {
   const username = process.env.OPENSEARCH_USERNAME;
   const password = process.env.OPENSEARCH_PASSWORD;
@@ -135,6 +140,19 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
   reply.code(200).send({ ok: true });
 };
 
+const filterHeaders = (item: RequestRecord): RequestRecord => {
+  if (IGNORE_HEADER_PREFIX.length === 0) {
+    return item;
+  }
+
+  const headers = Object.fromEntries(
+    Object.entries(item.request.headers).filter(
+      ([key]) => !IGNORE_HEADER_PREFIX.some((prefix) => key.startsWith(prefix)),
+    ),
+  );
+  return { ...item, request: { ...item.request, headers } };
+};
+
 const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   Params: { bucket: string };
   Querystring: { from?: string };
@@ -167,6 +185,7 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
       ? res.body.hits.hits
           .filter((hit) => hit._source != null)
           .map((hit) => ({ ...hit._source, _id: hit._id }))
+          .map((record) => filterHeaders(record as RequestRecord))
       : [];
   return reply.code(200).send(records);
 };
