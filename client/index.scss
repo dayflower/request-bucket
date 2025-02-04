@@ -52,12 +52,18 @@
 
       th, td {
         padding: 0.1rem 0.2rem;
-        white-space: nowrap;
+        word-break: break-all;
+        overflow-wrap: break-word;
       }
   
       th {
-        width: 20%;
+        width: 12.5rem;
         font-weight: bold;
+        white-space: nowrap;
+      }
+      
+      td {
+        white-space: normal;
       }
     }
   }
