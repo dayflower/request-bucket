@@ -141,7 +141,10 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
     return reply.code(500).send({ ok: false });
   }
 
-  const link = `${protocol}://${req.headers.host}/bucket/${bucket}/${id}`;
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const effectiveProto = forwardedProto ?? protocol;
+
+  const link = `${effectiveProto}://${req.headers.host}/bucket/${bucket}/${id}`;
 
   reply.code(200).send({ ok: true, link });
 };
