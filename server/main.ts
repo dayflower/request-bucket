@@ -111,8 +111,10 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
 
   const body = req.rawBody as Buffer | undefined;
 
+  const id = uuid62();
+
   const record: RequestRecord = {
-    id: uuid62(),
+    id,
     timestamp: new Date().toISOString(),
     bucket: paths[0],
     request: {
@@ -135,9 +137,13 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
     body: record,
     refresh: true,
   });
-  console.log(res);
+  if (res.statusCode !== 201) {
+    return reply.code(500).send({ ok: false });
+  }
 
-  reply.code(200).send({ ok: true });
+  const link = `${protocol}://${req.headers.host}/bucket/${bucket}/${id}`;
+
+  reply.code(200).send({ ok: true, link });
 };
 
 const filterHeaders = (item: RequestRecord): RequestRecord => {
@@ -166,7 +172,7 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
       from: Math.trunc(Number(from)),
       size: 10,
       query: {
-        match: {
+        term: {
           bucket,
         },
       },
@@ -190,6 +196,49 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   return reply.code(200).send(records);
 };
 
+const onGetHookRecord: RouteHandlerMethodWithCustomRouteGeneric<{
+  Params: { bucket: string; id: string };
+}> = async (req, reply) => {
+  const { bucket, id } = req.params;
+
+  const res = await openSearch.search({
+    index: OPENSEARCH_INDEX,
+    body: {
+      size: 1,
+      query: {
+        bool: {
+          must: [
+            {
+              term: {
+                bucket,
+              },
+            },
+            {
+              term: {
+                id,
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+
+  const records =
+    res.statusCode === 200
+      ? res.body.hits.hits
+          .filter((hit) => hit._source != null)
+          .map((hit) => ({ ...hit._source, _id: hit._id }))
+          .map((record) => filterHeaders(record as RequestRecord))
+      : [];
+
+  if (records.length === 0) {
+    return reply.code(404).send({ message: 'Record not found' });
+  }
+
+  return reply.code(200).send(records[0]);
+};
+
 const setup = async (server: FastifyInstance) => {
   await server.register(FastifyRawBody, {
     field: 'rawBody',
@@ -209,6 +258,10 @@ const setup = async (server: FastifyInstance) => {
     .get<{ Params: { bucket: string }; Querystring: { from?: string } }>(
       '/api/bucket/:bucket/record/',
       onGetHookRecords,
+    )
+    .get<{ Params: { bucket: string; id: string } }>(
+      '/api/bucket/:bucket/record/:id',
+      onGetHookRecord,
     );
 };
 

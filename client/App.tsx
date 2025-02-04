@@ -1,5 +1,6 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router';
 import Bucket from './Bucket';
+import RequestRecordView from './RequestRecordView';
 import Top from './Top';
 
 function NotFound() {
@@ -20,6 +21,10 @@ function App() {
         <Routes>
           <Route path="/" element={<Top />} />
           <Route path="/bucket/:bucket" element={<Bucket />} />
+          <Route
+            path="/bucket/:bucket/:recordId"
+            element={<RequestRecordView />}
+          />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

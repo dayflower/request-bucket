@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { JsonBody, RequestRecord } from '../common/types';
-
-function toUpperTokenHead(src: string): string {
-  return src
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('-');
-}
+import type { RequestRecord } from '../common/types';
+import { RequestRecordComponent } from './RequestRecordComponent';
 
 function Guide({
   bucket,
@@ -33,63 +27,7 @@ function Guide({
   );
 }
 
-function Headers({ headers }: { headers: Record<string, string> }) {
-  return (
-    <div className="headers">
-      <table>
-        <tbody>
-          {Object.entries(headers).map(([key, value]) => (
-            <tr key={key}>
-              <th>{toUpperTokenHead(key)}</th>
-              <td>{value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Body({
-  bodyRaw,
-  bodyJson,
-}: { bodyRaw?: string; bodyJson?: JsonBody }) {
-  if (bodyJson != null) {
-    return (
-      <div className="body">
-        <pre>{JSON.stringify(bodyJson, null, 2)} </pre>
-      </div>
-    );
-  }
-
-  if (bodyRaw != null) {
-    return (
-      <div className="body">
-        <pre>{bodyRaw}</pre>
-      </div>
-    );
-  }
-
-  return <></>;
-}
-
-function RequestRecordView({
-  record,
-  ...props
-}: React.ComponentProps<'div'> & { record: RequestRecord }) {
-  return (
-    <div className="requestRecord" {...props}>
-      <h3 className="request">
-        {record.request.method} {record.request.pathQuery}
-      </h3>
-      <div className="timestamp">{record.timestamp}</div>
-      <Headers headers={record.request.headers} />
-      <Body {...record.request} />
-    </div>
-  );
-}
-
-function Bucket() {
+function Bucket({ ...props }: React.ComponentProps<'div'>) {
   const { bucket } = useParams<{ bucket: string }>();
   const [records, setRecords] = useState<RequestRecord[]>();
 
@@ -118,7 +56,7 @@ function Bucket() {
   }, [load]);
 
   return (
-    <div>
+    <div {...props}>
       <h1>
         <Link to="/">request bucket</Link>: {bucket}
       </h1>
@@ -139,11 +77,12 @@ function Bucket() {
       {hasRecords && <h2>Requests</h2>}
 
       {records?.map((record) => (
-        <RequestRecordView
+        <RequestRecordComponent
           key={record.id}
           id={record.id}
           data-osid={record._id}
           record={record}
+          linkToItem={`/bucket/${record.bucket}/${record.id}`}
         />
       ))}
     </div>
