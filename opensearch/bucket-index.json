@@ -47,7 +47,7 @@
             "type": "text"
           },
           "bodyJson": {
-            "type": "nested"
+            "type": "flat_object"
           }
         }
       }
