@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import type { RequestRecord } from '../common/types';
-import { RequestRecordComponent } from './RequestRecordComponent';
+import RequestRecordComponent from './RequestRecordComponent';
 
 function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
   const { bucket, recordId } = useParams<{

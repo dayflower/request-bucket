@@ -1,59 +1,64 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import type { RequestRecord } from '../common/types';
-import { RequestRecordComponent } from './RequestRecordComponent';
-
-function Guide({
-  bucket,
-  ...props
-}: React.ComponentProps<'div'> & { bucket: string }) {
-  return (
-    <div {...props}>
-      <p>
-        To record a webhook, send a request to <code>/hook/{bucket}</code>.
-      </p>
-
-      <p>For example:</p>
-
-      <pre>
-        curl \<br />
-        &nbsp;&nbsp;&nbsp;&nbsp;-X POST \<br />
-        &nbsp;&nbsp;&nbsp;&nbsp;-H 'Content-Type: application/json' \<br />
-        &nbsp;&nbsp;&nbsp;&nbsp;-d '{'{'} "message": "Hello, world" {'}'}' \
-        <br />
-        &nbsp;&nbsp;&nbsp;&nbsp;/hook/{bucket}/some/optional/path
-      </pre>
-    </div>
-  );
-}
+import RecordingGuide from './RecordingGuide';
+import RequestRecordComponent from './RequestRecordComponent';
 
 function Bucket({ ...props }: React.ComponentProps<'div'>) {
   const { bucket } = useParams<{ bucket: string }>();
-  const [records, setRecords] = useState<RequestRecord[]>();
+  const [records, setRecords] = useState<
+    (RequestRecord & { loaded?: boolean })[]
+  >([]);
+  const [nextLink, setNextLink] = useState<string | null>(null);
+  const loadedRef = useRef<HTMLDivElement>(null);
 
   const hasRecords = records != null && records.length > 0;
 
-  const load = useCallback(async () => {
+  const load = async (from: string | undefined = undefined) => {
     if (bucket == null) {
       return;
     }
 
+    const uri = from ?? `/api/bucket/${bucket}/record/`;
+
     try {
-      const res = await fetch(`/api/bucket/${bucket}/record/`, {
+      const res = await fetch(uri, {
         method: 'GET',
       });
       if (res.ok) {
-        const records = await res.json();
-        setRecords(records);
+        const body = await res.json();
+
+        const loaded = body.records;
+        const items = from != null ? [...records, ...loaded] : loaded;
+        if (from != null) {
+          items[records.length].loaded = true;
+        }
+
+        setRecords(items);
+
+        if (body.next != null) {
+          setNextLink(body.next);
+        } else {
+          setNextLink(null);
+        }
+
+        if (from != null) {
+          setTimeout(() => {
+            loadedRef.current?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start',
+            });
+          }, 100);
+        }
       }
     } catch (err) {
       console.error(err);
     }
-  }, [bucket]);
+  };
 
   useEffect(() => {
     load();
-  }, [load]);
+  }, []);
 
   return (
     <div {...props}>
@@ -61,7 +66,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
         <Link to="/">request bucket</Link>: {bucket}
       </h1>
 
-      <button type="button" onClick={load}>
+      <button type="button" onClick={() => load()}>
         Reload
       </button>
 
@@ -70,7 +75,8 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
           <summary>
             <h2>Guide</h2>
           </summary>
-          <Guide bucket={bucket} />
+
+          <RecordingGuide bucketId={bucket} />
         </details>
       )}
 
@@ -78,6 +84,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
 
       {records?.map((record) => (
         <RequestRecordComponent
+          ref={record.loaded ? loadedRef : undefined}
           key={record.id}
           id={record.id}
           data-osid={record._id}
@@ -85,6 +92,12 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
           linkToItem={`/bucket/${record.bucket}/${record.id}`}
         />
       ))}
+
+      {nextLink != null && (
+        <button type="button" onClick={() => load(nextLink)}>
+          Load more
+        </button>
+      )}
     </div>
   );
 }

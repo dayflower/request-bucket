@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { Link } from 'react-router';
 import type { JsonBody, RequestRecord } from '../common/types';
 
@@ -52,16 +53,15 @@ function Body({
   return <></>;
 }
 
-export function RequestRecordComponent({
-  record,
-  linkToItem,
-  ...props
-}: React.ComponentProps<'div'> & {
-  record: RequestRecord;
-  linkToItem?: string;
-}) {
+const RequestRecordComponent = forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<'div'> & {
+    record: RequestRecord;
+    linkToItem?: string;
+  }
+>(({ record, linkToItem, ...props }, ref) => {
   return (
-    <div className="requestRecord" {...props}>
+    <div className="requestRecord" {...props} ref={ref}>
       <h3 className="request">
         {record.request.method} {record.request.pathQuery}
       </h3>
@@ -75,7 +75,12 @@ export function RequestRecordComponent({
         )}
       </div>
       <Headers headers={record.request.headers} />
-      <Body {...record.request} />
+      <Body
+        bodyJson={record.request.bodyJson}
+        bodyRaw={record.request.bodyRaw}
+      />
     </div>
   );
-}
+});
+
+export default RequestRecordComponent;
