@@ -7,6 +7,8 @@ import type { SpaghettiMain } from '../lib/spaghetti/engine';
 import type { RouteHandlerMethodWithCustomRouteGeneric } from './util';
 import { uuid62 } from './uuid62';
 
+const ITEMS_PER_PAGE = 5;
+
 const envValue = (key: string): string => {
   const value = process.env[key];
   if (value == null) {
@@ -57,9 +59,6 @@ const createOpenSearchClient = () => {
 };
 
 const openSearch = createOpenSearchClient();
-
-const dateToISO8601String = (date: Date) =>
-  `${date.toLocaleDateString('sv-SE')}T${date.toLocaleTimeString('sv-SE')}+0900`;
 
 const parseRequestBody = (
   rawBody: Buffer | undefined,
@@ -167,16 +166,32 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   Querystring: { from?: string };
 }> = async (req, reply) => {
   const { bucket } = req.params;
-  const from = req.query.from ?? '0';
+  const from = req.query.from;
+
+  const condition: Record<string, unknown>[] = [
+    {
+      term: {
+        bucket,
+      },
+    },
+  ];
+  if (from != null && from.trim() !== '') {
+    condition.push({
+      range: {
+        id: {
+          lte: from,
+        },
+      },
+    });
+  }
 
   const res = await openSearch.search({
     index: OPENSEARCH_INDEX,
     body: {
-      from: Math.trunc(Number(from)),
-      size: 10,
+      size: ITEMS_PER_PAGE + 1,
       query: {
-        term: {
-          bucket,
+        bool: {
+          filter: condition,
         },
       },
       sort: [
@@ -189,14 +204,29 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
     },
   });
 
-  const records =
-    res.statusCode === 200
-      ? res.body.hits.hits
-          .filter((hit) => hit._source != null)
-          .map((hit) => ({ ...hit._source, _id: hit._id }))
-          .map((record) => filterHeaders(record as RequestRecord))
-      : [];
-  return reply.code(200).send(records);
+  if (res.statusCode === 200) {
+    const hits = res.body.hits.hits
+      .filter((hit) => hit._source != null)
+      .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
+      .map((record) => filterHeaders(record));
+
+    if (hits.length > ITEMS_PER_PAGE) {
+      const last = hits.pop();
+      const nextFrom = last?.id;
+      if (nextFrom != null) {
+        return reply.code(200).send({
+          records: hits,
+          next: `/api/bucket/${bucket}/record/?from=${nextFrom}`,
+        });
+      }
+    }
+
+    return reply.code(200).send({ records: hits });
+  }
+
+  console.error(res.statusCode, res.body);
+
+  return reply.code(200).send({ records: [] });
 };
 
 const onGetHookRecord: RouteHandlerMethodWithCustomRouteGeneric<{
