@@ -196,7 +196,7 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
       },
       sort: [
         {
-          id: {
+          timestamp: {
             order: 'desc',
           },
         },
