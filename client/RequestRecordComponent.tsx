@@ -60,6 +60,7 @@ const RequestRecordComponent = forwardRef<
     linkToItem?: string;
   }
 >(({ record, linkToItem, ...props }, ref) => {
+  const localTimestamp = new Date(record.timestamp).toLocaleString(undefined, { timeZoneName: 'short', });
   return (
     <div className="requestRecord" {...props} ref={ref}>
       <h3 className="request">
@@ -68,10 +69,10 @@ const RequestRecordComponent = forwardRef<
       <div className="timestamp">
         {linkToItem ? (
           <Link to={`/bucket/${record.bucket}/${record.id}`}>
-            {record.timestamp}
+            {localTimestamp}
           </Link>
         ) : (
-          record.timestamp
+          localTimestamp
         )}
       </div>
       <Headers headers={record.request.headers} />
