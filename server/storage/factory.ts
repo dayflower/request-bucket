@@ -40,7 +40,7 @@ export function createStorage(config: StorageConfig): StorageAdapter {
     }
 
     default: {
-      throw new Error(`Unsupported storage type: ${config.type}`);
+      throw new Error(`Unsupported storage type: '${config.type}'. Supported types are: opensearch, memory`);
     }
   }
 }
