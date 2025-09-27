@@ -18,15 +18,15 @@ Request-bucket is a self-hosted webhook inspection tool built with Node.js, Type
 
 The application supports multiple storage backends via the `STORAGE_TYPE` environment variable:
 
-### OpenSearch Storage (default)
-Set `STORAGE_TYPE=opensearch` (or omit for default). Required variables:
+### OpenSearch Storage
+Set `STORAGE_TYPE=opensearch`. Required variables:
 - `OPENSEARCH_ENDPOINT`: OpenSearch cluster endpoint
 - `OPENSEARCH_INDEX`: Index name for storing request data
 - `OPENSEARCH_USERNAME`: (optional) Authentication username
 - `OPENSEARCH_PASSWORD`: (optional) Authentication password
 
-### In-Memory Storage
-Set `STORAGE_TYPE=memory`. No additional configuration required.
+### In-Memory Storage (default)
+If `STORAGE_TYPE` is not set, in-memory storage is used by default. Alternatively, set `STORAGE_TYPE=memory`. No additional configuration required.
 Note: Only works with single server instances, data is lost on restart.
 
 ### Common Environment Variables
