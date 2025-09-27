@@ -1,64 +1,16 @@
-import { Client } from '@opensearch-project/opensearch';
 import type { FastifyInstance, RouteHandlerMethod } from 'fastify';
 import FastifyRawBody from 'fastify-raw-body';
 import buffer from 'node:buffer';
 import type { JsonBody, RequestRecord } from '../common/types';
 import type { SpaghettiMain } from '../lib/spaghetti/engine';
+import { createStorageFromEnv } from './storage/factory';
+import type { StorageAdapter } from './storage/interface';
 import type { RouteHandlerMethodWithCustomRouteGeneric } from './util';
 import { uuid62 } from './uuid62';
 
 const ITEMS_PER_PAGE = 5;
 
-const envValue = (key: string): string => {
-  const value = process.env[key];
-  if (value == null) {
-    throw new Error(`Environment variable ${key} is not set.`);
-  }
-  return value;
-};
-
-const OPENSEARCH_INDEX = envValue('OPENSEARCH_INDEX');
-
-const IGNORE_HEADER_PREFIX = (process.env.IGNORE_HEADER_PREFIX ?? '')
-  .split(/\s*,\s*/)
-  .filter((prefix) => prefix !== '')
-  .map((prefix) => prefix.toLowerCase());
-
-const createOpenSearchClient = () => {
-  const username = process.env.OPENSEARCH_USERNAME;
-  const password = process.env.OPENSEARCH_PASSWORD;
-
-  if (username != null) {
-    if (password == null) {
-      throw new Error(
-        'OPENSEARCH_USERNAME is set but OPENSEARCH_PASSWORD is not set',
-      );
-    }
-  }
-  if (password != null) {
-    if (username == null) {
-      throw new Error(
-        'OPENSEARCH_PASSWORD is set but OPENSEARCH_USERNAME is not set',
-      );
-    }
-  }
-
-  return new Client({
-    ...{
-      node: envValue('OPENSEARCH_ENDPOINT'),
-    },
-    ...(username != null && password != null
-      ? {
-          auth: {
-            username,
-            password,
-          },
-        }
-      : {}),
-  });
-};
-
-const openSearch = createOpenSearchClient();
+let storage: StorageAdapter;
 
 const parseRequestBody = (
   rawBody: Buffer | undefined,
@@ -80,7 +32,7 @@ const parseRequestBody = (
         bodyRaw,
         bodyJson: JSON.parse(bodyRaw) as JsonBody,
       };
-    } catch (e) {
+    } catch (_e) {
       return { bodyRaw };
     }
   } else {
@@ -131,12 +83,10 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
     },
   };
 
-  const res = await openSearch.index({
-    index: OPENSEARCH_INDEX,
-    body: record,
-    refresh: true,
-  });
-  if (res.statusCode !== 201) {
+  try {
+    await storage.store(record);
+  } catch (error) {
+    console.error('Failed to store record:', error);
     return reply.code(500).send({ ok: false });
   }
 
@@ -148,19 +98,6 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
   reply.code(200).send({ ok: true, link });
 };
 
-const filterHeaders = (item: RequestRecord): RequestRecord => {
-  if (IGNORE_HEADER_PREFIX.length === 0) {
-    return item;
-  }
-
-  const headers = Object.fromEntries(
-    Object.entries(item.request.headers).filter(
-      ([key]) => !IGNORE_HEADER_PREFIX.some((prefix) => key.startsWith(prefix)),
-    ),
-  );
-  return { ...item, request: { ...item.request, headers } };
-};
-
 const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   Params: { bucket: string };
   Querystring: { from?: string };
@@ -168,65 +105,17 @@ const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   const { bucket } = req.params;
   const from = req.query.from;
 
-  const condition: Record<string, unknown>[] = [
-    {
-      term: {
-        bucket,
-      },
-    },
-  ];
-  if (from != null && from.trim() !== '') {
-    condition.push({
-      range: {
-        id: {
-          lte: from,
-        },
-      },
+  try {
+    const result = await storage.getRecords(bucket, {
+      from,
+      limit: ITEMS_PER_PAGE,
     });
+
+    return reply.code(200).send(result);
+  } catch (error) {
+    console.error('Failed to get records:', error);
+    return reply.code(200).send({ records: [] });
   }
-
-  const res = await openSearch.search({
-    index: OPENSEARCH_INDEX,
-    body: {
-      size: ITEMS_PER_PAGE + 1,
-      query: {
-        bool: {
-          filter: condition,
-        },
-      },
-      sort: [
-        {
-          timestamp: {
-            order: 'desc',
-          },
-        },
-      ],
-    },
-  });
-
-  if (res.statusCode === 200) {
-    const hits = res.body.hits.hits
-      .filter((hit) => hit._source != null)
-      .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
-      .map((record) => filterHeaders(record));
-
-    if (hits.length > ITEMS_PER_PAGE) {
-      const last = hits.pop();
-      const nextFrom = last?.id;
-      if (nextFrom != null) {
-        return reply.code(200).send({
-          records: hits,
-          next: `/api/bucket/${bucket}/record/?from=${nextFrom}`,
-        });
-      }
-    }
-
-    return reply.code(200).send({ records: hits });
-  }
-
-  console.error(res.statusCode, res.body);
-
-  return reply.code(200).send({ records: [] });
 };
 
 const onGetHookRecord: RouteHandlerMethodWithCustomRouteGeneric<{
@@ -234,45 +123,24 @@ const onGetHookRecord: RouteHandlerMethodWithCustomRouteGeneric<{
 }> = async (req, reply) => {
   const { bucket, id } = req.params;
 
-  const res = await openSearch.search({
-    index: OPENSEARCH_INDEX,
-    body: {
-      size: 1,
-      query: {
-        bool: {
-          must: [
-            {
-              term: {
-                bucket,
-              },
-            },
-            {
-              term: {
-                id,
-              },
-            },
-          ],
-        },
-      },
-    },
-  });
+  try {
+    const record = await storage.getRecord(bucket, id);
 
-  const records =
-    res.statusCode === 200
-      ? res.body.hits.hits
-          .filter((hit) => hit._source != null)
-          .map((hit) => ({ ...hit._source, _id: hit._id }))
-          .map((record) => filterHeaders(record as RequestRecord))
-      : [];
+    if (!record) {
+      return reply.code(404).send({ message: 'Record not found' });
+    }
 
-  if (records.length === 0) {
+    return reply.code(200).send(record);
+  } catch (error) {
+    console.error('Failed to get record:', error);
     return reply.code(404).send({ message: 'Record not found' });
   }
-
-  return reply.code(200).send(records[0]);
 };
 
 const setup = async (server: FastifyInstance) => {
+  // Initialize storage from environment variables
+  storage = createStorageFromEnv();
+
   await server.register(FastifyRawBody, {
     field: 'rawBody',
     global: false,
