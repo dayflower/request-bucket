@@ -80,6 +80,11 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       return { records: [] };
     }
 
+    // Handle malformed response
+    if (!res.body?.hits?.hits) {
+      return { records: [] };
+    }
+
     const hits = res.body.hits.hits
       .filter((hit: any) => hit._source != null)
       .map((hit: any) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
@@ -124,6 +129,11 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     });
 
     if (res.statusCode !== 200) {
+      return null;
+    }
+
+    // Handle malformed response
+    if (!res.body?.hits?.hits) {
       return null;
     }
 

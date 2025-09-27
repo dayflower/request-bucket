@@ -43,6 +43,11 @@ npm run build:client
 npm run build:server
 npm run prod
 
+# Testing (using Vitest)
+npm test                # Run tests once
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage report
+
 # Linting (using Biome)
 npm run lint
 
