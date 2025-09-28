@@ -15,7 +15,7 @@ Perfect for webhook development, API testing, and debugging third-party integrat
 ## Prerequisites
 
 - Node.js 22+
-- OpenSearch instance
+- OpenSearch instance (optional, defaults to in-memory storage)
 
 ## Quick Start
 
@@ -36,9 +36,12 @@ docker run -d \
 npm install
 ```
 
-2. Set up environment variables (see Configuration section)
+2. Run with default in-memory storage:
+```bash
+npm run dev
+```
 
-3. Build and run:
+Or set up environment variables for OpenSearch storage (see Configuration section) and run:
 ```bash
 npm run build:client
 npm run build:server
@@ -79,9 +82,29 @@ curl -X DELETE http://localhost:3000/hook/my-bucket/api/remove
 
 ## Configuration
 
-### OpenSearch Index Setup
+### Storage Backends
 
-Before running the application, you need to create the required index in OpenSearch with the proper mapping:
+The application supports multiple storage backends configured via the `STORAGE_TYPE` environment variable:
+
+#### In-Memory Storage (Default)
+
+```bash
+# Default - no configuration required
+npm run dev
+
+# Or explicitly set
+STORAGE_TYPE=memory npm run dev
+```
+
+**Note:** In-memory storage only works with single server instances and data is lost on restart. Perfect for development and testing.
+
+#### OpenSearch Storage
+
+```bash
+STORAGE_TYPE=opensearch npm run dev
+```
+
+Before using OpenSearch storage, create the required index with the proper mapping:
 
 ```bash
 # Create the index with the required mapping
@@ -92,22 +115,29 @@ curl -X PUT "https://your-opensearch-endpoint/request-bucket" \
 
 The index mapping definition is available in [`opensearch/bucket-index.json`](opensearch/bucket-index.json) and defines the structure for storing webhook request data.
 
-### Required Environment Variables
+### Environment Variables
 
-- `OPENSEARCH_ENDPOINT`
+#### Storage Configuration
+
+- `STORAGE_TYPE`
+  - Storage backend type: `memory` (default) or `opensearch`
+
+#### OpenSearch Configuration (when STORAGE_TYPE=opensearch)
+
+- `OPENSEARCH_ENDPOINT` (required)
   - OpenSearch cluster endpoint
   - Example: `https://opensearch.example.com/`
-- `OPENSEARCH_INDEX`
+- `OPENSEARCH_INDEX` (required)
   - Index name for storing request data
   - Example: `request-bucket`
-
-### Optional Environment Variables
-
-- `OPENSEARCH_USERNAME`
+- `OPENSEARCH_USERNAME` (optional)
   - OpenSearch authentication username
-- `OPENSEARCH_PASSWORD`
+- `OPENSEARCH_PASSWORD` (optional)
   - OpenSearch authentication password
-- `IGNORE_HEADER_PREFIX`
+
+#### Common Configuration
+
+- `IGNORE_HEADER_PREFIX` (optional)
   - Comma-separated list of header prefixes to filter out
   - Example: `x-forwarded-,cf-`
 
