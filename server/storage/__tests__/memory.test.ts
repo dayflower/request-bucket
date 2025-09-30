@@ -295,4 +295,149 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       expect(result.records).toHaveLength(1);
     });
   });
+
+  describe('since parameter filtering', () => {
+    it('should return only records newer than the since timestamp', async () => {
+      const now = new Date();
+      const baseTime = now.getTime();
+
+      const record1 = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(baseTime - 3000).toISOString()
+      );
+      const record2 = createSampleRecord(
+        'test-id-2',
+        'test-bucket',
+        new Date(baseTime - 2000).toISOString()
+      );
+      const record3 = createSampleRecord(
+        'test-id-3',
+        'test-bucket',
+        new Date(baseTime - 1000).toISOString()
+      );
+
+      await adapter.store(record1);
+      await adapter.store(record2);
+      await adapter.store(record3);
+
+      const sinceTimestamp = new Date(baseTime - 2500).toISOString();
+      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+
+      expect(result.records).toHaveLength(2);
+      expect(result.records[0].id).toBe('test-id-3');
+      expect(result.records[1].id).toBe('test-id-2');
+    });
+
+    it('should return empty array when no records are newer than since', async () => {
+      const now = new Date();
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(now.getTime() - 5000).toISOString()
+      );
+
+      await adapter.store(record);
+
+      const sinceTimestamp = new Date(now.getTime() - 1000).toISOString();
+      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+
+      expect(result.records).toHaveLength(0);
+    });
+
+    it('should return all records when since timestamp is older than all records', async () => {
+      const now = new Date();
+      const record1 = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(now.getTime() - 2000).toISOString()
+      );
+      const record2 = createSampleRecord(
+        'test-id-2',
+        'test-bucket',
+        new Date(now.getTime() - 1000).toISOString()
+      );
+
+      await adapter.store(record1);
+      await adapter.store(record2);
+
+      const sinceTimestamp = new Date(now.getTime() - 5000).toISOString();
+      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+
+      expect(result.records).toHaveLength(2);
+    });
+
+    it('should prioritize since over from parameter', async () => {
+      const now = new Date();
+      const record1 = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(now.getTime() - 3000).toISOString()
+      );
+      const record2 = createSampleRecord(
+        'test-id-2',
+        'test-bucket',
+        new Date(now.getTime() - 2000).toISOString()
+      );
+      const record3 = createSampleRecord(
+        'test-id-3',
+        'test-bucket',
+        new Date(now.getTime() - 1000).toISOString()
+      );
+
+      await adapter.store(record1);
+      await adapter.store(record2);
+      await adapter.store(record3);
+
+      const sinceTimestamp = new Date(now.getTime() - 2500).toISOString();
+      const result = await adapter.getRecords('test-bucket', {
+        from: 'test-id-3',
+        since: sinceTimestamp
+      });
+
+      // Should use since parameter, ignoring from
+      expect(result.records).toHaveLength(2);
+      expect(result.records[0].id).toBe('test-id-3');
+      expect(result.records[1].id).toBe('test-id-2');
+    });
+
+    it('should handle empty string since parameter', async () => {
+      const record = createSampleRecord('test-id-1', 'test-bucket');
+      await adapter.store(record);
+
+      const result = await adapter.getRecords('test-bucket', { since: '' });
+      expect(result.records).toHaveLength(1);
+    });
+
+    it('should handle whitespace-only since parameter', async () => {
+      const record = createSampleRecord('test-id-1', 'test-bucket');
+      await adapter.store(record);
+
+      const result = await adapter.getRecords('test-bucket', { since: '   ' });
+      expect(result.records).toHaveLength(1);
+    });
+
+    it('should respect limit parameter with since', async () => {
+      const now = new Date();
+      const baseTime = now.getTime();
+
+      for (let i = 1; i <= 5; i++) {
+        const record = createSampleRecord(
+          `test-id-${i}`,
+          'test-bucket',
+          new Date(baseTime - (6000 - i * 1000)).toISOString()
+        );
+        await adapter.store(record);
+      }
+
+      const sinceTimestamp = new Date(baseTime - 6000).toISOString();
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+        limit: 2
+      });
+
+      expect(result.records).toHaveLength(2);
+      expect(result.next).toBeDefined();
+    });
+  });
 });

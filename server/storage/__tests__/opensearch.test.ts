@@ -406,6 +406,22 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should return null when response has malformed structure', async () => {
+      const bucket = 'test-bucket';
+      const id = 'test-id';
+      mockSearch.mockResolvedValue({
+        statusCode: 200,
+        body: {
+          // Missing hits structure
+          something: 'unexpected'
+        }
+      });
+
+      const result = await adapter.getRecord(bucket, id);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('header filtering', () => {
@@ -675,6 +691,276 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       );
 
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
+    });
+  });
+
+  describe('since parameter filtering', () => {
+    it('should include since parameter in query when provided', async () => {
+      const bucket = 'test-bucket';
+      const since = '2024-01-01T00:00:00.000Z';
+      mockSearch.mockResolvedValue(createMockSearchResponse([]));
+
+      await adapter.getRecords(bucket, { since });
+
+      expect(mockSearch).toHaveBeenCalledWith({
+        index: 'test-index',
+        body: {
+          size: 6,
+          query: {
+            bool: {
+              filter: [
+                {
+                  term: {
+                    bucket: 'test-bucket',
+                  },
+                },
+                {
+                  range: {
+                    timestamp: {
+                      gt: since,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          sort: [
+            {
+              timestamp: {
+                order: 'desc',
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should return only records newer than the since timestamp', async () => {
+      const now = new Date();
+      const baseTime = now.getTime();
+
+      const record1 = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(baseTime - 3000).toISOString()
+      );
+      const record2 = createSampleRecord(
+        'test-id-2',
+        'test-bucket',
+        new Date(baseTime - 2000).toISOString()
+      );
+      const record3 = createSampleRecord(
+        'test-id-3',
+        'test-bucket',
+        new Date(baseTime - 1000).toISOString()
+      );
+
+      const sinceTimestamp = new Date(baseTime - 2500).toISOString();
+
+      // Mock the search to filter by timestamp
+      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+        const filterConditions = body.query?.bool?.filter;
+        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+
+        let records = [record1, record2, record3];
+
+        if (timestampRange) {
+          const gtTimestamp = timestampRange.range.timestamp.gt;
+          records = records.filter(r =>
+            new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
+          );
+        }
+
+        // Sort by timestamp descending
+        records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        return createMockSearchResponse(records);
+      });
+
+      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+
+      expect(result.records).toHaveLength(2);
+      expect(result.records[0].id).toBe('test-id-3');
+      expect(result.records[1].id).toBe('test-id-2');
+    });
+
+    it('should return empty array when no records are newer than since', async () => {
+      const now = new Date();
+      const oldRecord = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        new Date(now.getTime() - 5000).toISOString()
+      );
+
+      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+        const filterConditions = body.query?.bool?.filter;
+        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+
+        if (timestampRange) {
+          const gtTimestamp = timestampRange.range.timestamp.gt;
+          if (new Date(oldRecord.timestamp).getTime() <= new Date(gtTimestamp).getTime()) {
+            return createMockSearchResponse([]);
+          }
+        }
+
+        return createMockSearchResponse([oldRecord]);
+      });
+
+      const sinceTimestamp = new Date(now.getTime() - 1000).toISOString();
+      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+
+      expect(result.records).toHaveLength(0);
+    });
+
+    it('should prioritize since over from parameter', async () => {
+      const bucket = 'test-bucket';
+      const since = '2024-01-01T00:00:00.000Z';
+      const from = 'test-from-id';
+      mockSearch.mockResolvedValue(createMockSearchResponse([]));
+
+      await adapter.getRecords(bucket, { from, since });
+
+      // Should have timestamp range but not id range
+      expect(mockSearch).toHaveBeenCalledWith({
+        index: 'test-index',
+        body: {
+          size: 6,
+          query: {
+            bool: {
+              filter: [
+                {
+                  term: {
+                    bucket: 'test-bucket',
+                  },
+                },
+                {
+                  range: {
+                    timestamp: {
+                      gt: since,
+                    },
+                  },
+                },
+              ],
+            },
+          },
+          sort: [
+            {
+              timestamp: {
+                order: 'desc',
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should handle empty string since parameter', async () => {
+      const bucket = 'test-bucket';
+      mockSearch.mockResolvedValue(createMockSearchResponse([]));
+
+      await adapter.getRecords(bucket, { since: '' });
+
+      // Should not include timestamp range filter for empty string
+      expect(mockSearch).toHaveBeenCalledWith({
+        index: 'test-index',
+        body: {
+          size: 6,
+          query: {
+            bool: {
+              filter: [
+                {
+                  term: {
+                    bucket: 'test-bucket',
+                  },
+                },
+              ],
+            },
+          },
+          sort: [
+            {
+              timestamp: {
+                order: 'desc',
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should handle whitespace-only since parameter', async () => {
+      const bucket = 'test-bucket';
+      mockSearch.mockResolvedValue(createMockSearchResponse([]));
+
+      await adapter.getRecords(bucket, { since: '   ' });
+
+      // Should not include timestamp range filter for whitespace-only string
+      expect(mockSearch).toHaveBeenCalledWith({
+        index: 'test-index',
+        body: {
+          size: 6,
+          query: {
+            bool: {
+              filter: [
+                {
+                  term: {
+                    bucket: 'test-bucket',
+                  },
+                },
+              ],
+            },
+          },
+          sort: [
+            {
+              timestamp: {
+                order: 'desc',
+              },
+            },
+          ],
+        },
+      });
+    });
+
+    it('should respect limit parameter with since', async () => {
+      const now = new Date();
+      const baseTime = now.getTime();
+
+      const records = Array.from({ length: 5 }, (_, i) =>
+        createSampleRecord(
+          `test-id-${i + 1}`,
+          'test-bucket',
+          new Date(baseTime - (5000 - i * 1000)).toISOString()
+        )
+      );
+
+      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+        const limit = body.size - 1; // Adjust for pagination detection
+        const filterConditions = body.query?.bool?.filter;
+        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+
+        let filteredRecords = records;
+
+        if (timestampRange) {
+          const gtTimestamp = timestampRange.range.timestamp.gt;
+          filteredRecords = records.filter(r =>
+            new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
+          );
+        }
+
+        // Sort by timestamp descending
+        filteredRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        // Return all records (including pagination detection record)
+        return createMockSearchResponse(filteredRecords.slice(0, limit + 1));
+      });
+
+      const sinceTimestamp = new Date(baseTime - 6000).toISOString();
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+        limit: 2
+      });
+
+      expect(result.records).toHaveLength(2);
+      expect(result.next).toBeDefined();
     });
   });
 });

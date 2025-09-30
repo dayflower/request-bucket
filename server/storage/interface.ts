@@ -14,6 +14,7 @@ export interface StorageAdapter {
     options?: {
       from?: string;
       limit?: number;
+      since?: string;
     }
   ): Promise<{
     records: RequestRecord[];

@@ -100,14 +100,16 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
 
 const onGetHookRecords: RouteHandlerMethodWithCustomRouteGeneric<{
   Params: { bucket: string };
-  Querystring: { from?: string };
+  Querystring: { from?: string; since?: string };
 }> = async (req, reply) => {
   const { bucket } = req.params;
   const from = req.query.from;
+  const since = req.query.since;
 
   try {
     const result = await storage.getRecords(bucket, {
       from,
+      since,
       limit: ITEMS_PER_PAGE,
     });
 
@@ -156,7 +158,7 @@ const setup = async (server: FastifyInstance) => {
       },
       handler: onHookHandler,
     })
-    .get<{ Params: { bucket: string }; Querystring: { from?: string } }>(
+    .get<{ Params: { bucket: string }; Querystring: { from?: string; since?: string } }>(
       '/api/bucket/:bucket/record/',
       onGetHookRecords,
     )
