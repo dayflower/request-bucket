@@ -35,9 +35,9 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
 
   async getRecords(
     bucket: string,
-    options: { from?: string; limit?: number } = {}
+    options: { from?: string; limit?: number; since?: string } = {}
   ): Promise<{ records: RequestRecord[]; next?: string }> {
-    const { from, limit = 5 } = options;
+    const { from, limit = 5, since } = options;
 
     const condition: Record<string, unknown>[] = [
       {
@@ -47,7 +47,18 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       },
     ];
 
-    if (from != null && from.trim() !== '') {
+    // Filter by 'since' parameter if provided (for polling)
+    if (since != null && since.trim() !== '') {
+      condition.push({
+        range: {
+          timestamp: {
+            gt: since,
+          },
+        },
+      });
+    }
+    // Otherwise, filter by 'from' parameter if provided (for pagination)
+    else if (from != null && from.trim() !== '') {
       condition.push({
         range: {
           id: {

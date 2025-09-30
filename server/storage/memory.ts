@@ -27,16 +27,22 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
   async getRecords(
     bucket: string,
-    options: { from?: string; limit?: number } = {}
+    options: { from?: string; limit?: number; since?: string } = {}
   ): Promise<{ records: RequestRecord[]; next?: string }> {
-    const { from, limit = 5 } = options;
+    const { from, limit = 5, since } = options;
 
     const bucketRecords = this.records.get(bucket) || [];
 
     let filteredRecords = bucketRecords;
 
-    // Filter by 'from' parameter if provided
-    if (from != null && from.trim() !== '') {
+    // Filter by 'since' parameter if provided (for polling)
+    if (since != null && since.trim() !== '') {
+      filteredRecords = bucketRecords.filter(record =>
+        new Date(record.timestamp).getTime() > new Date(since).getTime()
+      );
+    }
+    // Otherwise, filter by 'from' parameter if provided (for pagination)
+    else if (from != null && from.trim() !== '') {
       const fromIndex = bucketRecords.findIndex(record => record.id === from);
       if (fromIndex >= 0) {
         filteredRecords = bucketRecords.slice(fromIndex + 1);
