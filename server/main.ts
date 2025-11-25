@@ -6,7 +6,7 @@ import type { SpaghettiMain } from '../lib/spaghetti/engine';
 import { createStorageFromEnv } from './storage/factory';
 import type { StorageAdapter } from './storage/interface';
 import type { RouteHandlerMethodWithCustomRouteGeneric } from './util';
-import { uuid62 } from './uuid62';
+import { uuid58 } from './uuid58';
 
 const ITEMS_PER_PAGE = 5;
 
@@ -62,7 +62,7 @@ const onHookHandler: RouteHandlerMethod = async (req, reply) => {
 
   const body = req.rawBody as Buffer | undefined;
 
-  const id = uuid62();
+  const id = uuid58();
 
   const record: RequestRecord = {
     id,
