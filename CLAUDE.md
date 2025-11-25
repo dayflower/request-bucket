@@ -83,6 +83,8 @@ The project uses a dual-build approach:
 2. Request data stored via storage adapter (OpenSearch or memory) with generated UUID
 3. Web interface at `/bucket/{bucket}` displays captured requests
 4. API endpoints serve request data from storage to React frontend
+5. Client polls for new requests every 5 seconds using `/api/bucket/{bucket}/record/?since={timestamp}` (auto-refresh can be toggled)
+6. New records are highlighted with a yellow background fade animation
 
 ## Code Style
 

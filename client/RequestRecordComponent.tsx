@@ -56,13 +56,14 @@ function Body({
 const RequestRecordComponent = forwardRef<
   HTMLDivElement,
   React.ComponentProps<'div'> & {
-    record: RequestRecord;
+    record: RequestRecord & { isNew?: boolean };
     linkToItem?: string;
   }
 >(({ record, linkToItem, ...props }, ref) => {
   const localTimestamp = new Date(record.timestamp).toLocaleString(undefined, { timeZoneName: 'short', });
+  const className = `requestRecord${record.isNew ? ' is-new' : ''}`;
   return (
-    <div className="requestRecord" {...props} ref={ref}>
+    <div className={className} {...props} ref={ref}>
       <h3 className="request">
         {record.request.method} {record.request.pathQuery}
       </h3>
