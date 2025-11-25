@@ -2,6 +2,11 @@ import { Client } from '@opensearch-project/opensearch';
 import type { RequestRecord } from '../../common/types';
 import type { StorageAdapter } from './interface';
 
+interface SearchHit<T> {
+  _id: string;
+  _source?: T;
+}
+
 export class OpenSearchStorageAdapter implements StorageAdapter {
   private client: Client;
   private index: string;
@@ -96,9 +101,9 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       return { records: [] };
     }
 
-    const hits = res.body.hits.hits
-      .filter((hit: any) => hit._source != null)
-      .map((hit: any) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
+    const hits = (res.body.hits.hits as SearchHit<RequestRecord>[])
+      .filter((hit) => hit._source != null)
+      .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
       .map((record) => this.filterHeaders(record));
 
     if (hits.length > limit) {
@@ -148,10 +153,10 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       return null;
     }
 
-    const records = res.body.hits.hits
-      .filter((hit: any) => hit._source != null)
-      .map((hit: any) => ({ ...hit._source, _id: hit._id }))
-      .map((record: RequestRecord) => this.filterHeaders(record));
+    const records = (res.body.hits.hits as SearchHit<RequestRecord>[])
+      .filter((hit) => hit._source != null)
+      .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
+      .map((record) => this.filterHeaders(record));
 
     return records.length > 0 ? records[0] : null;
   }

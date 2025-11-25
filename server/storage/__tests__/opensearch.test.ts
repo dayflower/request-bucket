@@ -3,6 +3,37 @@ import type { RequestRecord } from '../../../common/types';
 import { OpenSearchStorageAdapter } from '../opensearch';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
 
+interface TermCondition {
+  term?: {
+    bucket?: string;
+    id?: string;
+  };
+}
+
+interface RangeCondition {
+  range?: {
+    id?: {
+      lte?: string;
+    };
+    timestamp?: {
+      gt?: string;
+    };
+  };
+}
+
+type QueryCondition = TermCondition | RangeCondition;
+
+interface SearchRequestBody {
+  size?: number;
+  query?: {
+    bool?: {
+      must?: QueryCondition[];
+      filter?: QueryCondition[];
+    };
+  };
+  sort?: Array<Record<string, { order: string }>>;
+}
+
 // Mock the OpenSearch client
 const mockIndex = vi.fn();
 const mockSearch = vi.fn();
@@ -67,15 +98,15 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
     return createMockIndexResponse();
   });
 
-  mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+  mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
     // Check for single record search (has `must` array with id term)
     const mustConditions = body.query?.bool?.must;
     const filterConditions = body.query?.bool?.filter;
 
     if (mustConditions && Array.isArray(mustConditions)) {
       // Single record search: getRecord()
-      const bucketTerm = mustConditions.find((f: any) => f.term?.bucket)?.term?.bucket;
-      const idTerm = mustConditions.find((f: any) => f.term?.id)?.term?.id;
+      const bucketTerm = mustConditions.find((f): f is TermCondition => 'term' in f && f.term?.bucket !== undefined)?.term?.bucket;
+      const idTerm = mustConditions.find((f): f is TermCondition => 'term' in f && f.term?.id !== undefined)?.term?.id;
 
       if (bucketTerm && idTerm) {
         const record = sharedStoredRecords.find(r => r.bucket === bucketTerm && r.id === idTerm);
@@ -85,15 +116,15 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
 
     if (filterConditions && Array.isArray(filterConditions)) {
       // Multiple records search: getRecords()
-      const bucketTerm = filterConditions.find((f: any) => f.term?.bucket)?.term?.bucket;
+      const bucketTerm = filterConditions.find((f): f is TermCondition => 'term' in f && f.term?.bucket !== undefined)?.term?.bucket;
 
-      let bucketRecords = sharedStoredRecords.filter(r => r.bucket === bucketTerm);
+      const bucketRecords = sharedStoredRecords.filter(r => r.bucket === bucketTerm);
 
       // Sort by timestamp descending to match OpenSearch behavior
       bucketRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       const limit = body.size ? body.size - 1 : 5; // Adjust for pagination detection
-      const from = filterConditions.find((f: any) => f.range?.id)?.range?.id?.lte;
+      const from = filterConditions.find((f): f is RangeCondition => 'range' in f && f.range?.id !== undefined)?.range?.id?.lte;
 
       let filteredRecords = bucketRecords;
       if (from) {
@@ -758,17 +789,19 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const sinceTimestamp = new Date(baseTime - 2500).toISOString();
 
       // Mock the search to filter by timestamp
-      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
         const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
 
         let records = [record1, record2, record3];
 
-        if (timestampRange) {
+        if (timestampRange?.range?.timestamp) {
           const gtTimestamp = timestampRange.range.timestamp.gt;
-          records = records.filter(r =>
-            new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
-          );
+          if (gtTimestamp) {
+            records = records.filter(r =>
+              new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
+            );
+          }
         }
 
         // Sort by timestamp descending
@@ -792,13 +825,13 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         new Date(now.getTime() - 5000).toISOString()
       );
 
-      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
+      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
         const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
 
-        if (timestampRange) {
+        if (timestampRange?.range?.timestamp) {
           const gtTimestamp = timestampRange.range.timestamp.gt;
-          if (new Date(oldRecord.timestamp).getTime() <= new Date(gtTimestamp).getTime()) {
+          if (gtTimestamp && new Date(oldRecord.timestamp).getTime() <= new Date(gtTimestamp).getTime()) {
             return createMockSearchResponse([]);
           }
         }
@@ -932,18 +965,20 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         )
       );
 
-      mockSearch.mockImplementation(async ({ body }: { body: any }) => {
-        const limit = body.size - 1; // Adjust for pagination detection
+      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
+        const limit = (body.size ?? 6) - 1; // Adjust for pagination detection
         const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f: any) => f.range?.timestamp);
+        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
 
         let filteredRecords = records;
 
-        if (timestampRange) {
+        if (timestampRange?.range?.timestamp) {
           const gtTimestamp = timestampRange.range.timestamp.gt;
-          filteredRecords = records.filter(r =>
-            new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
-          );
+          if (gtTimestamp) {
+            filteredRecords = records.filter(r =>
+              new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
+            );
+          }
         }
 
         // Sort by timestamp descending
