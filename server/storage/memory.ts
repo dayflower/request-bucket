@@ -43,7 +43,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
     }
     // Otherwise, filter by 'from' parameter if provided (for pagination)
     else if (from != null && from.trim() !== '') {
-      const fromIndex = bucketRecords.findIndex(record => record.id === from);
+      const fromIndex = bucketRecords.findIndex(record => record.timestamp === from);
       if (fromIndex >= 0) {
         filteredRecords = bucketRecords.slice(fromIndex + 1);
       }
