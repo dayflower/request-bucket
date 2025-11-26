@@ -12,11 +12,9 @@ interface TermCondition {
 
 interface RangeCondition {
   range?: {
-    id?: {
-      lte?: string;
-    };
     timestamp?: {
       gt?: string;
+      lte?: string;
     };
   };
 }
@@ -124,11 +122,10 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
       bucketRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       const limit = body.size ? body.size - 1 : 5; // Adjust for pagination detection
-      const from = filterConditions.find((f): f is RangeCondition => 'range' in f && f.range?.id !== undefined)?.range?.id?.lte;
-
+      const from = filterConditions.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined)?.range?.timestamp?.lte;
       let filteredRecords = bucketRecords;
       if (from) {
-        const fromIndex = bucketRecords.findIndex(r => r.id === from);
+        const fromIndex = bucketRecords.findIndex(r => r.timestamp === from);
         if (fromIndex >= 0) {
           filteredRecords = bucketRecords.slice(fromIndex + 1);
         }

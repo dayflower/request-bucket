@@ -1,6 +1,7 @@
 import { Client } from '@opensearch-project/opensearch';
 import type { RequestRecord } from '../../common/types';
 import type { StorageAdapter } from './interface';
+import { time } from 'console';
 
 interface SearchHit<T> {
   _id: string;
@@ -66,7 +67,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     else if (from != null && from.trim() !== '') {
       condition.push({
         range: {
-          id: {
+          timestamp: {
             lte: from,
           },
         },
@@ -108,7 +109,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
 
     if (hits.length > limit) {
       const last = hits.pop();
-      const nextFrom = last?.id;
+      const nextFrom = last?.timestamp;
       if (nextFrom != null) {
         return {
           records: hits,
