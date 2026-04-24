@@ -1,6 +1,6 @@
-import type { FastifyPluginAsync } from 'fastify';
 import path from 'node:path';
-import { type SpaghettiConfig, invoke } from './engine';
+import type { FastifyPluginAsync } from 'fastify';
+import { invoke, type SpaghettiConfig } from './engine';
 import { spaStaticHandlerPlugin } from './spaStatic';
 
 type ProdServerPluginOptions = {

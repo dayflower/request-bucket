@@ -20,14 +20,15 @@ export class MemoryStorageAdapter implements StorageAdapter {
     bucketRecords.push(record);
 
     // Sort by timestamp descending to maintain order
-    bucketRecords.sort((a, b) =>
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    bucketRecords.sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   }
 
   async getRecords(
     bucket: string,
-    options: { from?: string; limit?: number; since?: string } = {}
+    options: { from?: string; limit?: number; since?: string } = {},
   ): Promise<{ records: RequestRecord[]; next?: string }> {
     const { from, limit = 5, since } = options;
 
@@ -37,13 +38,16 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
     // Filter by 'since' parameter if provided (for polling)
     if (since != null && since.trim() !== '') {
-      filteredRecords = bucketRecords.filter(record =>
-        new Date(record.timestamp).getTime() > new Date(since).getTime()
+      filteredRecords = bucketRecords.filter(
+        (record) =>
+          new Date(record.timestamp).getTime() > new Date(since).getTime(),
       );
     }
     // Otherwise, filter by 'from' parameter if provided (for pagination)
     else if (from != null && from.trim() !== '') {
-      const fromIndex = bucketRecords.findIndex(record => record.timestamp === from);
+      const fromIndex = bucketRecords.findIndex(
+        (record) => record.timestamp === from,
+      );
       if (fromIndex >= 0) {
         filteredRecords = bucketRecords.slice(fromIndex + 1);
       }
@@ -51,8 +55,9 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
     // Apply pagination
     const paginatedRecords = filteredRecords.slice(0, limit + 1);
-    const records = paginatedRecords.slice(0, limit)
-      .map(record => this.filterHeaders(record));
+    const records = paginatedRecords
+      .slice(0, limit)
+      .map((record) => this.filterHeaders(record));
 
     // Check if there are more records
     let next: string | undefined;
@@ -68,7 +73,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
   async getRecord(bucket: string, id: string): Promise<RequestRecord | null> {
     const bucketRecords = this.records.get(bucket) || [];
-    const record = bucketRecords.find(r => r.id === id);
+    const record = bucketRecords.find((r) => r.id === id);
 
     return record ? this.filterHeaders(record) : null;
   }
@@ -80,8 +85,9 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
     const headers = Object.fromEntries(
       Object.entries(item.request.headers).filter(
-        ([key]) => !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix))
-      )
+        ([key]) =>
+          !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix)),
+      ),
     );
 
     return { ...item, request: { ...item.request, headers } };

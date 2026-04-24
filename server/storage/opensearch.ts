@@ -1,7 +1,6 @@
 import { Client } from '@opensearch-project/opensearch';
 import type { RequestRecord } from '../../common/types';
 import type { StorageAdapter } from './interface';
-import { time } from 'console';
 
 interface SearchHit<T> {
   _id: string;
@@ -17,7 +16,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     endpoint: string,
     index: string,
     auth?: { username: string; password: string },
-    ignoreHeaderPrefixes: string[] = []
+    ignoreHeaderPrefixes: string[] = [],
   ) {
     this.client = new Client({
       node: endpoint,
@@ -41,7 +40,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
 
   async getRecords(
     bucket: string,
-    options: { from?: string; limit?: number; since?: string } = {}
+    options: { from?: string; limit?: number; since?: string } = {},
   ): Promise<{ records: RequestRecord[]; next?: string }> {
     const { from, limit = 5, since } = options;
 
@@ -169,8 +168,9 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
 
     const headers = Object.fromEntries(
       Object.entries(item.request.headers).filter(
-        ([key]) => !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix))
-      )
+        ([key]) =>
+          !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix)),
+      ),
     );
 
     return { ...item, request: { ...item.request, headers } };

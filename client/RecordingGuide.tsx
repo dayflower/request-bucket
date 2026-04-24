@@ -5,7 +5,8 @@ function RecordingGuide({
   bucketId = 'sandbox',
   ...props
 }: React.ComponentProps<'div'> & { children?: ReactNode; bucketId?: string }) {
-  const currentOrigin = typeof window === 'undefined' ? '' : window.location.origin;
+  const currentOrigin =
+    typeof window === 'undefined' ? '' : window.location.origin;
 
   return (
     <article {...props}>
@@ -23,7 +24,8 @@ function RecordingGuide({
         &nbsp;&nbsp;&nbsp;&nbsp;-H 'Content-Type: application/json' \<br />
         &nbsp;&nbsp;&nbsp;&nbsp;-d '{'{'} "message": "Hello, world" {'}'}' \
         <br />
-        &nbsp;&nbsp;&nbsp;&nbsp;{currentOrigin}/hook/{bucketId}/some/optional/path
+        &nbsp;&nbsp;&nbsp;&nbsp;{currentOrigin}/hook/{bucketId}
+        /some/optional/path
       </pre>
 
       <p>You can use any HTTP method, such as GET, POST, PUT, or DELETE ...</p>

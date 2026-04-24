@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import type { RequestRecord } from '../common/types';
 import RecordingGuide from './RecordingGuide';
@@ -17,57 +17,59 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
 
   const hasRecords = records != null && records.length > 0;
 
-  const load = async (from: string | undefined = undefined) => {
-    if (bucket == null) {
-      return;
-    }
-
-    const uri = from ?? `/api/bucket/${bucket}/record/`;
-
-    try {
-      const res = await fetch(uri, {
-        method: 'GET',
-      });
-      if (res.ok) {
-        const body = await res.json();
-
-        const loaded = body.records;
-        const items = from != null ? [...records, ...loaded] : loaded;
-        if (from != null) {
-          items[records.length].loaded = true;
-        }
-
-        setRecords(items);
-
-        // Update latest timestamp for polling
-        if (loaded.length > 0 && from == null) {
-          setLatestTimestamp(loaded[0].timestamp);
-        } else if (loaded.length === 0 && from == null) {
-          // Initialize with current time if bucket is empty
-          setLatestTimestamp(new Date().toISOString());
-        }
-
-        if (body.next != null) {
-          setNextLink(body.next);
-        } else {
-          setNextLink(null);
-        }
-
-        if (from != null) {
-          setTimeout(() => {
-            loadedRef.current?.scrollIntoView({
-              behavior: 'smooth',
-              block: 'start',
-            });
-          }, 100);
-        }
+  const load = useCallback(
+    async (from: string | undefined = undefined) => {
+      if (bucket == null) {
+        return;
       }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
-  const pollNewRecords = async () => {
+      const uri = from ?? `/api/bucket/${bucket}/record/`;
+
+      try {
+        const res = await fetch(uri, {
+          method: 'GET',
+        });
+        if (res.ok) {
+          const body = await res.json();
+
+          const loaded = body.records;
+          setRecords((prev) => {
+            const items = from != null ? [...prev, ...loaded] : loaded;
+            if (from != null) {
+              items[prev.length].loaded = true;
+            }
+            return items;
+          });
+
+          if (loaded.length > 0 && from == null) {
+            setLatestTimestamp(loaded[0].timestamp);
+          } else if (loaded.length === 0 && from == null) {
+            setLatestTimestamp(new Date().toISOString());
+          }
+
+          if (body.next != null) {
+            setNextLink(body.next);
+          } else {
+            setNextLink(null);
+          }
+
+          if (from != null) {
+            setTimeout(() => {
+              loadedRef.current?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start',
+              });
+            }, 100);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [bucket],
+  );
+
+  const pollNewRecords = useCallback(async () => {
     if (!bucket || !latestTimestamp || !isPollingEnabled) {
       return;
     }
@@ -77,29 +79,30 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
         `/api/bucket/${bucket}/record/?since=${encodeURIComponent(latestTimestamp)}`,
         {
           method: 'GET',
-        }
+        },
       );
       if (res.ok) {
         const body = await res.json();
         const newRecords = body.records;
 
         if (newRecords.length > 0) {
-          // Mark new records with isNew flag for highlighting
-          const markedRecords = newRecords.map((r: RequestRecord) => ({ ...r, isNew: true }));
-          setRecords([...markedRecords, ...records]);
+          const markedRecords = newRecords.map((r: RequestRecord) => ({
+            ...r,
+            isNew: true,
+          }));
+          setRecords((prev) => [...markedRecords, ...prev]);
 
-          // Update latest timestamp
           setLatestTimestamp(newRecords[0].timestamp);
         }
       }
     } catch (err) {
       console.error('Polling error:', err);
     }
-  };
+  }, [bucket, latestTimestamp, isPollingEnabled]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   // Track page visibility
   useEffect(() => {
@@ -123,7 +126,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
     const intervalId = setInterval(pollNewRecords, 5000); // Poll every 5 seconds
 
     return () => clearInterval(intervalId);
-  }, [bucket, latestTimestamp, isPollingEnabled, records, isTabVisible]);
+  }, [latestTimestamp, isPollingEnabled, isTabVisible, pollNewRecords]);
 
   return (
     <div {...props}>

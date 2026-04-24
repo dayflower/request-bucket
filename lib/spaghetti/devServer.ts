@@ -1,9 +1,9 @@
-import fastifyStatic from '@fastify/static';
-import type { FastifyPluginAsync } from 'fastify';
 import path from 'node:path';
 import type { ParsedUrlQuery } from 'node:querystring';
+import fastifyStatic from '@fastify/static';
+import type { FastifyPluginAsync } from 'fastify';
 import { createServer } from 'vite';
-import { type SpaghettiConfig, invoke } from './engine';
+import { invoke, type SpaghettiConfig } from './engine';
 
 type DevServerPluginOptions = {
   publicDir: string;

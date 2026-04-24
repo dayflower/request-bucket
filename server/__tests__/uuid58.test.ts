@@ -18,7 +18,8 @@ describe('uuid58', () => {
   it('should use only Base58 characters (no 0, O, I, l)', () => {
     const id = uuid58();
     // Base58 alphabet: 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
-    const base58Regex = /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/;
+    const base58Regex =
+      /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]+$/;
     expect(id).toMatch(base58Regex);
   });
 
