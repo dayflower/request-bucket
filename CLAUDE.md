@@ -48,8 +48,9 @@ npm test                # Run tests once
 npm run test:watch      # Run tests in watch mode
 npm run test:coverage   # Run tests with coverage report
 
-# Linting (using Biome)
-npm run lint
+# Check and fix (using Biome)
+npm run check           # Check for issues
+npm run fix             # Check and auto-fix issues
 
 # Clean build artifacts
 npm run clean

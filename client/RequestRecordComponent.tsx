@@ -50,7 +50,7 @@ function Body({
     );
   }
 
-  return <></>;
+  return null;
 }
 
 const RequestRecordComponent = forwardRef<
@@ -60,7 +60,9 @@ const RequestRecordComponent = forwardRef<
     linkToItem?: string;
   }
 >(({ record, linkToItem, ...props }, ref) => {
-  const localTimestamp = new Date(record.timestamp).toLocaleString(undefined, { timeZoneName: 'short', });
+  const localTimestamp = new Date(record.timestamp).toLocaleString(undefined, {
+    timeZoneName: 'short',
+  });
   const className = `requestRecord${record.isNew ? ' is-new' : ''}`;
   return (
     <div className={className} {...props} ref={ref}>

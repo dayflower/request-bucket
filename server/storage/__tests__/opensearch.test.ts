@@ -56,7 +56,7 @@ const createMockIndexResponse = (statusCode: number = 201) => ({
 
 const createMockSearchResponse = (
   records: RequestRecord[],
-  statusCode: number = 200
+  statusCode: number = 200,
 ) => ({
   statusCode,
   body: {
@@ -96,52 +96,74 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
     return createMockIndexResponse();
   });
 
-  mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
-    // Check for single record search (has `must` array with id term)
-    const mustConditions = body.query?.bool?.must;
-    const filterConditions = body.query?.bool?.filter;
+  mockSearch.mockImplementation(
+    async ({ body }: { body: SearchRequestBody }) => {
+      // Check for single record search (has `must` array with id term)
+      const mustConditions = body.query?.bool?.must;
+      const filterConditions = body.query?.bool?.filter;
 
-    if (mustConditions && Array.isArray(mustConditions)) {
-      // Single record search: getRecord()
-      const bucketTerm = mustConditions.find((f): f is TermCondition => 'term' in f && f.term?.bucket !== undefined)?.term?.bucket;
-      const idTerm = mustConditions.find((f): f is TermCondition => 'term' in f && f.term?.id !== undefined)?.term?.id;
+      if (mustConditions && Array.isArray(mustConditions)) {
+        // Single record search: getRecord()
+        const bucketTerm = mustConditions.find(
+          (f): f is TermCondition =>
+            'term' in f && f.term?.bucket !== undefined,
+        )?.term?.bucket;
+        const idTerm = mustConditions.find(
+          (f): f is TermCondition => 'term' in f && f.term?.id !== undefined,
+        )?.term?.id;
 
-      if (bucketTerm && idTerm) {
-        const record = sharedStoredRecords.find(r => r.bucket === bucketTerm && r.id === idTerm);
-        return createMockSearchResponse(record ? [record] : []);
-      }
-    }
-
-    if (filterConditions && Array.isArray(filterConditions)) {
-      // Multiple records search: getRecords()
-      const bucketTerm = filterConditions.find((f): f is TermCondition => 'term' in f && f.term?.bucket !== undefined)?.term?.bucket;
-
-      const bucketRecords = sharedStoredRecords.filter(r => r.bucket === bucketTerm);
-
-      // Sort by timestamp descending to match OpenSearch behavior
-      bucketRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
-      const limit = body.size ? body.size - 1 : 5; // Adjust for pagination detection
-      const from = filterConditions.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined)?.range?.timestamp?.lte;
-      let filteredRecords = bucketRecords;
-      if (from) {
-        const fromIndex = bucketRecords.findIndex(r => r.timestamp === from);
-        if (fromIndex >= 0) {
-          filteredRecords = bucketRecords.slice(fromIndex + 1);
+        if (bucketTerm && idTerm) {
+          const record = sharedStoredRecords.find(
+            (r) => r.bucket === bucketTerm && r.id === idTerm,
+          );
+          return createMockSearchResponse(record ? [record] : []);
         }
       }
 
-      const paginatedRecords = filteredRecords.slice(0, limit);
-      return createMockSearchResponse(paginatedRecords);
-    }
+      if (filterConditions && Array.isArray(filterConditions)) {
+        // Multiple records search: getRecords()
+        const bucketTerm = filterConditions.find(
+          (f): f is TermCondition =>
+            'term' in f && f.term?.bucket !== undefined,
+        )?.term?.bucket;
 
-    // Fallback
-    return createMockSearchResponse([]);
-  });
+        const bucketRecords = sharedStoredRecords.filter(
+          (r) => r.bucket === bucketTerm,
+        );
+
+        // Sort by timestamp descending to match OpenSearch behavior
+        bucketRecords.sort(
+          (a, b) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+
+        const limit = body.size ? body.size - 1 : 5; // Adjust for pagination detection
+        const from = filterConditions.find(
+          (f): f is RangeCondition =>
+            'range' in f && f.range?.timestamp !== undefined,
+        )?.range?.timestamp?.lte;
+        let filteredRecords = bucketRecords;
+        if (from) {
+          const fromIndex = bucketRecords.findIndex(
+            (r) => r.timestamp === from,
+          );
+          if (fromIndex >= 0) {
+            filteredRecords = bucketRecords.slice(fromIndex + 1);
+          }
+        }
+
+        const paginatedRecords = filteredRecords.slice(0, limit);
+        return createMockSearchResponse(paginatedRecords);
+      }
+
+      // Fallback
+      return createMockSearchResponse([]);
+    },
+  );
 
   return new OpenSearchStorageAdapter(
     'https://test-opensearch:9200',
-    'test-index'
+    'test-index',
   );
 });
 
@@ -152,7 +174,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
     id: string,
     bucket: string,
     timestamp?: string,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): RequestRecord => ({
     id,
     timestamp: timestamp || new Date().toISOString(),
@@ -182,7 +204,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
 
     adapter = new OpenSearchStorageAdapter(
       'https://test-opensearch:9200',
-      'test-index'
+      'test-index',
     );
   });
 
@@ -190,7 +212,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
     it('should create adapter with endpoint and index', () => {
       const adapter = new OpenSearchStorageAdapter(
         'https://opensearch.example.com',
-        'my-index'
+        'my-index',
       );
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
     });
@@ -199,7 +221,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const adapter = new OpenSearchStorageAdapter(
         'https://opensearch.example.com',
         'my-index',
-        { username: 'user', password: 'pass' }
+        { username: 'user', password: 'pass' },
       );
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
     });
@@ -209,7 +231,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         'https://opensearch.example.com',
         'my-index',
         undefined,
-        ['x-forwarded-', 'cf-']
+        ['x-forwarded-', 'cf-'],
       );
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
     });
@@ -240,7 +262,9 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const record = createSampleRecord('test-id-1', 'test-bucket');
       mockIndex.mockResolvedValue(createMockIndexResponse(500));
 
-      await expect(adapter.store(record)).rejects.toThrow('Failed to store record: 500');
+      await expect(adapter.store(record)).rejects.toThrow(
+        'Failed to store record: 500',
+      );
     });
 
     it('should handle OpenSearch client errors', async () => {
@@ -343,7 +367,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
     it('should handle pagination when more records available', async () => {
       const bucket = 'test-bucket';
       const mockRecords = Array.from({ length: 6 }, (_, i) =>
-        createSampleRecord(`id-${i + 1}`, bucket)
+        createSampleRecord(`id-${i + 1}`, bucket),
       );
       mockSearch.mockResolvedValue(createMockSearchResponse(mockRecords));
 
@@ -366,7 +390,9 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const bucket = 'test-bucket';
       mockSearch.mockRejectedValue(new Error('Connection timeout'));
 
-      await expect(adapter.getRecords(bucket)).rejects.toThrow('Connection timeout');
+      await expect(adapter.getRecords(bucket)).rejects.toThrow(
+        'Connection timeout',
+      );
     });
   });
 
@@ -442,8 +468,8 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         statusCode: 200,
         body: {
           // Missing hits structure
-          something: 'unexpected'
-        }
+          something: 'unexpected',
+        },
       });
 
       const result = await adapter.getRecord(bucket, id);
@@ -458,10 +484,15 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         'content-type': 'application/json',
         'x-forwarded-for': '192.168.1.1',
         'cf-ray': 'test-ray',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       mockSearch.mockResolvedValue(createMockSearchResponse([record]));
 
       const result = await adapter.getRecord('test-bucket', 'test-id-1');
@@ -474,7 +505,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         'https://test-opensearch:9200',
         'test-index',
         undefined,
-        ['x-forwarded-', 'cf-']
+        ['x-forwarded-', 'cf-'],
       );
 
       const headers = {
@@ -482,17 +513,25 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         'x-forwarded-for': '192.168.1.1',
         'x-forwarded-proto': 'https',
         'cf-ray': 'test-ray',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       mockSearch.mockResolvedValue(createMockSearchResponse([record]));
 
-      const result = await adapterWithFiltering.getRecord('test-bucket', 'test-id-1');
+      const result = await adapterWithFiltering.getRecord(
+        'test-bucket',
+        'test-id-1',
+      );
 
       expect(result?.request.headers).toEqual({
         'content-type': 'application/json',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       });
     });
 
@@ -501,22 +540,27 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         'https://test-opensearch:9200',
         'test-index',
         undefined,
-        ['x-', 'cf-']
+        ['x-', 'cf-'],
       );
 
       const headers = {
         'content-type': 'application/json',
         'x-custom-header': 'value',
-        'cf-ray': 'test-ray'
+        'cf-ray': 'test-ray',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       mockSearch.mockResolvedValue(createMockSearchResponse([record]));
 
       const result = await adapterWithFiltering.getRecords('test-bucket');
 
       expect(result.records[0].request.headers).toEqual({
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       });
     });
   });
@@ -628,8 +672,8 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         statusCode: 200,
         body: {
           // Missing hits structure
-          something: 'unexpected'
-        }
+          something: 'unexpected',
+        },
       });
 
       const result = await adapter.getRecords(bucket);
@@ -646,10 +690,10 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
             hits: [
               { _source: null, _id: 'doc-1' },
               { _source: undefined, _id: 'doc-2' },
-              { _source: createSampleRecord('id-3', bucket), _id: 'doc-3' }
-            ]
-          }
-        }
+              { _source: createSampleRecord('id-3', bucket), _id: 'doc-3' },
+            ],
+          },
+        },
       });
 
       const result = await adapter.getRecords(bucket);
@@ -672,9 +716,9 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         body: {
           error: {
             type: 'security_exception',
-            reason: 'Authentication required'
-          }
-        }
+            reason: 'Authentication required',
+          },
+        },
       });
 
       const result = await adapter.getRecords(bucket);
@@ -689,9 +733,9 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         body: {
           error: {
             type: 'index_not_found_exception',
-            reason: 'no such index [test-index]'
-          }
-        }
+            reason: 'no such index [test-index]',
+          },
+        },
       });
 
       const result = await adapter.getRecords(bucket);
@@ -705,7 +749,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       // This test verifies the mocking is working correctly
       const adapter = new OpenSearchStorageAdapter(
         'https://my-opensearch:9200',
-        'my-index'
+        'my-index',
       );
 
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
@@ -715,7 +759,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const adapter = new OpenSearchStorageAdapter(
         'https://my-opensearch:9200',
         'my-index',
-        { username: 'testuser', password: 'testpass' }
+        { username: 'testuser', password: 'testpass' },
       );
 
       expect(adapter).toBeInstanceOf(OpenSearchStorageAdapter);
@@ -770,44 +814,56 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const record1 = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(baseTime - 3000).toISOString()
+        new Date(baseTime - 3000).toISOString(),
       );
       const record2 = createSampleRecord(
         'test-id-2',
         'test-bucket',
-        new Date(baseTime - 2000).toISOString()
+        new Date(baseTime - 2000).toISOString(),
       );
       const record3 = createSampleRecord(
         'test-id-3',
         'test-bucket',
-        new Date(baseTime - 1000).toISOString()
+        new Date(baseTime - 1000).toISOString(),
       );
 
       const sinceTimestamp = new Date(baseTime - 2500).toISOString();
 
       // Mock the search to filter by timestamp
-      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
-        const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
+      mockSearch.mockImplementation(
+        async ({ body }: { body: SearchRequestBody }) => {
+          const filterConditions = body.query?.bool?.filter;
+          const timestampRange = filterConditions?.find(
+            (f): f is RangeCondition =>
+              'range' in f && f.range?.timestamp !== undefined,
+          );
 
-        let records = [record1, record2, record3];
+          let records = [record1, record2, record3];
 
-        if (timestampRange?.range?.timestamp) {
-          const gtTimestamp = timestampRange.range.timestamp.gt;
-          if (gtTimestamp) {
-            records = records.filter(r =>
-              new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
-            );
+          if (timestampRange?.range?.timestamp) {
+            const gtTimestamp = timestampRange.range.timestamp.gt;
+            if (gtTimestamp) {
+              records = records.filter(
+                (r) =>
+                  new Date(r.timestamp).getTime() >
+                  new Date(gtTimestamp).getTime(),
+              );
+            }
           }
-        }
 
-        // Sort by timestamp descending
-        records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          // Sort by timestamp descending
+          records.sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          );
 
-        return createMockSearchResponse(records);
+          return createMockSearchResponse(records);
+        },
+      );
+
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
       });
-
-      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
 
       expect(result.records).toHaveLength(2);
       expect(result.records[0].id).toBe('test-id-3');
@@ -819,25 +875,36 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const oldRecord = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(now.getTime() - 5000).toISOString()
+        new Date(now.getTime() - 5000).toISOString(),
       );
 
-      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
-        const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
+      mockSearch.mockImplementation(
+        async ({ body }: { body: SearchRequestBody }) => {
+          const filterConditions = body.query?.bool?.filter;
+          const timestampRange = filterConditions?.find(
+            (f): f is RangeCondition =>
+              'range' in f && f.range?.timestamp !== undefined,
+          );
 
-        if (timestampRange?.range?.timestamp) {
-          const gtTimestamp = timestampRange.range.timestamp.gt;
-          if (gtTimestamp && new Date(oldRecord.timestamp).getTime() <= new Date(gtTimestamp).getTime()) {
-            return createMockSearchResponse([]);
+          if (timestampRange?.range?.timestamp) {
+            const gtTimestamp = timestampRange.range.timestamp.gt;
+            if (
+              gtTimestamp &&
+              new Date(oldRecord.timestamp).getTime() <=
+                new Date(gtTimestamp).getTime()
+            ) {
+              return createMockSearchResponse([]);
+            }
           }
-        }
 
-        return createMockSearchResponse([oldRecord]);
-      });
+          return createMockSearchResponse([oldRecord]);
+        },
+      );
 
       const sinceTimestamp = new Date(now.getTime() - 1000).toISOString();
-      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+      });
 
       expect(result.records).toHaveLength(0);
     });
@@ -958,37 +1025,47 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         createSampleRecord(
           `test-id-${i + 1}`,
           'test-bucket',
-          new Date(baseTime - (5000 - i * 1000)).toISOString()
-        )
+          new Date(baseTime - (5000 - i * 1000)).toISOString(),
+        ),
       );
 
-      mockSearch.mockImplementation(async ({ body }: { body: SearchRequestBody }) => {
-        const limit = (body.size ?? 6) - 1; // Adjust for pagination detection
-        const filterConditions = body.query?.bool?.filter;
-        const timestampRange = filterConditions?.find((f): f is RangeCondition => 'range' in f && f.range?.timestamp !== undefined);
+      mockSearch.mockImplementation(
+        async ({ body }: { body: SearchRequestBody }) => {
+          const limit = (body.size ?? 6) - 1; // Adjust for pagination detection
+          const filterConditions = body.query?.bool?.filter;
+          const timestampRange = filterConditions?.find(
+            (f): f is RangeCondition =>
+              'range' in f && f.range?.timestamp !== undefined,
+          );
 
-        let filteredRecords = records;
+          let filteredRecords = records;
 
-        if (timestampRange?.range?.timestamp) {
-          const gtTimestamp = timestampRange.range.timestamp.gt;
-          if (gtTimestamp) {
-            filteredRecords = records.filter(r =>
-              new Date(r.timestamp).getTime() > new Date(gtTimestamp).getTime()
-            );
+          if (timestampRange?.range?.timestamp) {
+            const gtTimestamp = timestampRange.range.timestamp.gt;
+            if (gtTimestamp) {
+              filteredRecords = records.filter(
+                (r) =>
+                  new Date(r.timestamp).getTime() >
+                  new Date(gtTimestamp).getTime(),
+              );
+            }
           }
-        }
 
-        // Sort by timestamp descending
-        filteredRecords.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+          // Sort by timestamp descending
+          filteredRecords.sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          );
 
-        // Return all records (including pagination detection record)
-        return createMockSearchResponse(filteredRecords.slice(0, limit + 1));
-      });
+          // Return all records (including pagination detection record)
+          return createMockSearchResponse(filteredRecords.slice(0, limit + 1));
+        },
+      );
 
       const sinceTimestamp = new Date(baseTime - 6000).toISOString();
       const result = await adapter.getRecords('test-bucket', {
         since: sinceTimestamp,
-        limit: 2
+        limit: 2,
       });
 
       expect(result.records).toHaveLength(2);

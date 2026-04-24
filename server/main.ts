@@ -1,6 +1,6 @@
+import buffer from 'node:buffer';
 import type { FastifyInstance, RouteHandlerMethod } from 'fastify';
 import FastifyRawBody from 'fastify-raw-body';
-import buffer from 'node:buffer';
 import type { JsonBody, RequestRecord } from '../common/types';
 import type { SpaghettiMain } from '../lib/spaghetti/engine';
 import { createStorageFromEnv } from './storage/factory';
@@ -158,10 +158,10 @@ const setup = async (server: FastifyInstance) => {
       },
       handler: onHookHandler,
     })
-    .get<{ Params: { bucket: string }; Querystring: { from?: string; since?: string } }>(
-      '/api/bucket/:bucket/record/',
-      onGetHookRecords,
-    )
+    .get<{
+      Params: { bucket: string };
+      Querystring: { from?: string; since?: string };
+    }>('/api/bucket/:bucket/record/', onGetHookRecords)
     .get<{ Params: { bucket: string; id: string } }>(
       '/api/bucket/:bucket/record/:id',
       onGetHookRecord,

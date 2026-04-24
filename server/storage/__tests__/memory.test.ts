@@ -4,7 +4,10 @@ import { MemoryStorageAdapter } from '../memory';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
 
 // Run shared interface tests
-createStorageInterfaceTests('MemoryStorageAdapter', () => new MemoryStorageAdapter());
+createStorageInterfaceTests(
+  'MemoryStorageAdapter',
+  () => new MemoryStorageAdapter(),
+);
 
 describe('MemoryStorageAdapter - Specific Implementation', () => {
   let adapter: MemoryStorageAdapter;
@@ -13,7 +16,7 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
     id: string,
     bucket: string,
     timestamp?: string,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
   ): RequestRecord => ({
     id,
     timestamp: timestamp || new Date().toISOString(),
@@ -59,17 +62,17 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record1 = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(now.getTime() - 2000).toISOString()
+        new Date(now.getTime() - 2000).toISOString(),
       );
       const record2 = createSampleRecord(
         'test-id-2',
         'test-bucket',
-        new Date(now.getTime() - 1000).toISOString()
+        new Date(now.getTime() - 1000).toISOString(),
       );
       const record3 = createSampleRecord(
         'test-id-3',
         'test-bucket',
-        now.toISOString()
+        now.toISOString(),
       );
 
       // Store in non-chronological order
@@ -106,28 +109,34 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       expect(firstPage.next).toContain('from=');
 
       // Get second page
-      const fromMatch = firstPage.next!.match(/from=([^&]+)/);
-      const from = fromMatch![1];
+      const fromMatch = firstPage.next?.match(/from=([^&]+)/);
+      const from = fromMatch?.[1];
 
-      const secondPage = await adapter.getRecords('test-bucket', { from, limit: 2 });
+      const secondPage = await adapter.getRecords('test-bucket', {
+        from,
+        limit: 2,
+      });
 
       expect(secondPage.records).toHaveLength(2);
       expect(secondPage.next).toBeDefined();
 
       // Get third page
-      const fromMatch2 = secondPage.next!.match(/from=([^&]+)/);
-      const from2 = fromMatch2![1];
+      const fromMatch2 = secondPage.next?.match(/from=([^&]+)/);
+      const from2 = fromMatch2?.[1];
 
-      const thirdPage = await adapter.getRecords('test-bucket', { from: from2, limit: 2 });
+      const thirdPage = await adapter.getRecords('test-bucket', {
+        from: from2,
+        limit: 2,
+      });
 
       expect(thirdPage.records).toHaveLength(2);
       expect(thirdPage.next).toBeUndefined(); // Last page
 
       // Ensure no duplicates across pages
       const allIds = [
-        ...firstPage.records.map(r => r.id),
-        ...secondPage.records.map(r => r.id),
-        ...thirdPage.records.map(r => r.id)
+        ...firstPage.records.map((r) => r.id),
+        ...secondPage.records.map((r) => r.id),
+        ...thirdPage.records.map((r) => r.id),
       ];
       const uniqueIds = new Set(allIds);
       expect(uniqueIds.size).toBe(6);
@@ -137,7 +146,9 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record = createSampleRecord('test-id-1', 'test-bucket');
       await adapter.store(record);
 
-      const result = await adapter.getRecords('test-bucket', { from: 'non-existent-id' });
+      const result = await adapter.getRecords('test-bucket', {
+        from: 'non-existent-id',
+      });
 
       expect(result.records).toHaveLength(1);
       expect(result.next).toBeUndefined();
@@ -150,10 +161,15 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
         'content-type': 'application/json',
         'x-forwarded-for': '192.168.1.1',
         'cf-ray': 'test-ray',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       await adapter.store(record);
 
       const result = await adapter.getRecord('test-bucket', 'test-id-1');
@@ -162,24 +178,35 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
     });
 
     it('should filter headers with configured prefixes', async () => {
-      const adapterWithFiltering = new MemoryStorageAdapter(['x-forwarded-', 'cf-']);
+      const adapterWithFiltering = new MemoryStorageAdapter([
+        'x-forwarded-',
+        'cf-',
+      ]);
 
       const headers = {
         'content-type': 'application/json',
         'x-forwarded-for': '192.168.1.1',
         'x-forwarded-proto': 'https',
         'cf-ray': 'test-ray',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       await adapterWithFiltering.store(record);
 
-      const result = await adapterWithFiltering.getRecord('test-bucket', 'test-id-1');
+      const result = await adapterWithFiltering.getRecord(
+        'test-bucket',
+        'test-id-1',
+      );
 
       expect(result?.request.headers).toEqual({
         'content-type': 'application/json',
-        'authorization': 'Bearer token'
+        authorization: 'Bearer token',
       });
     });
 
@@ -189,16 +216,21 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const headers = {
         'content-type': 'application/json',
         'x-custom-header': 'value',
-        'cf-ray': 'test-ray'
+        'cf-ray': 'test-ray',
       };
 
-      const record = createSampleRecord('test-id-1', 'test-bucket', undefined, headers);
+      const record = createSampleRecord(
+        'test-id-1',
+        'test-bucket',
+        undefined,
+        headers,
+      );
       await adapterWithFiltering.store(record);
 
       const result = await adapterWithFiltering.getRecords('test-bucket');
 
       expect(result.records[0].request.headers).toEqual({
-        'content-type': 'application/json'
+        'content-type': 'application/json',
       });
     });
   });
@@ -219,8 +251,8 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       expect(bucketA.records).toHaveLength(2);
       expect(bucketB.records).toHaveLength(1);
 
-      expect(bucketA.records.map(r => r.id)).toContain('test-id-1');
-      expect(bucketA.records.map(r => r.id)).toContain('test-id-3');
+      expect(bucketA.records.map((r) => r.id)).toContain('test-id-1');
+      expect(bucketA.records.map((r) => r.id)).toContain('test-id-3');
       expect(bucketB.records[0].id).toBe('test-id-2');
     });
   });
@@ -241,7 +273,7 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
 
         expect(stats).toEqual({
           'bucket-a': 2,
-          'bucket-b': 1
+          'bucket-b': 1,
         });
       });
     });
@@ -275,7 +307,9 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record = createSampleRecord('test-id-1', 'test-bucket');
       await adapter.store(record);
 
-      const result = await adapter.getRecords('test-bucket', { from: undefined });
+      const result = await adapter.getRecords('test-bucket', {
+        from: undefined,
+      });
       expect(result.records).toHaveLength(1);
     });
 
@@ -304,17 +338,17 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record1 = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(baseTime - 3000).toISOString()
+        new Date(baseTime - 3000).toISOString(),
       );
       const record2 = createSampleRecord(
         'test-id-2',
         'test-bucket',
-        new Date(baseTime - 2000).toISOString()
+        new Date(baseTime - 2000).toISOString(),
       );
       const record3 = createSampleRecord(
         'test-id-3',
         'test-bucket',
-        new Date(baseTime - 1000).toISOString()
+        new Date(baseTime - 1000).toISOString(),
       );
 
       await adapter.store(record1);
@@ -322,7 +356,9 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       await adapter.store(record3);
 
       const sinceTimestamp = new Date(baseTime - 2500).toISOString();
-      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+      });
 
       expect(result.records).toHaveLength(2);
       expect(result.records[0].id).toBe('test-id-3');
@@ -334,13 +370,15 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(now.getTime() - 5000).toISOString()
+        new Date(now.getTime() - 5000).toISOString(),
       );
 
       await adapter.store(record);
 
       const sinceTimestamp = new Date(now.getTime() - 1000).toISOString();
-      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+      });
 
       expect(result.records).toHaveLength(0);
     });
@@ -350,19 +388,21 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record1 = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(now.getTime() - 2000).toISOString()
+        new Date(now.getTime() - 2000).toISOString(),
       );
       const record2 = createSampleRecord(
         'test-id-2',
         'test-bucket',
-        new Date(now.getTime() - 1000).toISOString()
+        new Date(now.getTime() - 1000).toISOString(),
       );
 
       await adapter.store(record1);
       await adapter.store(record2);
 
       const sinceTimestamp = new Date(now.getTime() - 5000).toISOString();
-      const result = await adapter.getRecords('test-bucket', { since: sinceTimestamp });
+      const result = await adapter.getRecords('test-bucket', {
+        since: sinceTimestamp,
+      });
 
       expect(result.records).toHaveLength(2);
     });
@@ -372,17 +412,17 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const record1 = createSampleRecord(
         'test-id-1',
         'test-bucket',
-        new Date(now.getTime() - 3000).toISOString()
+        new Date(now.getTime() - 3000).toISOString(),
       );
       const record2 = createSampleRecord(
         'test-id-2',
         'test-bucket',
-        new Date(now.getTime() - 2000).toISOString()
+        new Date(now.getTime() - 2000).toISOString(),
       );
       const record3 = createSampleRecord(
         'test-id-3',
         'test-bucket',
-        new Date(now.getTime() - 1000).toISOString()
+        new Date(now.getTime() - 1000).toISOString(),
       );
 
       await adapter.store(record1);
@@ -392,7 +432,7 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const sinceTimestamp = new Date(now.getTime() - 2500).toISOString();
       const result = await adapter.getRecords('test-bucket', {
         from: 'test-id-3',
-        since: sinceTimestamp
+        since: sinceTimestamp,
       });
 
       // Should use since parameter, ignoring from
@@ -425,7 +465,7 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
         const record = createSampleRecord(
           `test-id-${i}`,
           'test-bucket',
-          new Date(baseTime - (6000 - i * 1000)).toISOString()
+          new Date(baseTime - (6000 - i * 1000)).toISOString(),
         );
         await adapter.store(record);
       }
@@ -433,7 +473,7 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const sinceTimestamp = new Date(baseTime - 6000).toISOString();
       const result = await adapter.getRecords('test-bucket', {
         since: sinceTimestamp,
-        limit: 2
+        limit: 2,
       });
 
       expect(result.records).toHaveLength(2);

@@ -7,7 +7,7 @@ import type { StorageAdapter } from '../../interface';
  */
 export function createStorageInterfaceTests(
   name: string,
-  createAdapter: () => StorageAdapter
+  createAdapter: () => StorageAdapter,
 ) {
   describe(`${name} - StorageAdapter Interface`, () => {
     let adapter: StorageAdapter;
@@ -15,7 +15,7 @@ export function createStorageInterfaceTests(
     const createSampleRecord = (
       id: string,
       bucket: string,
-      timestamp?: string
+      timestamp?: string,
     ): RequestRecord => ({
       id,
       timestamp: timestamp || new Date().toISOString(),
@@ -112,7 +112,10 @@ export function createStorageInterfaceTests(
           const from = fromMatch ? fromMatch[1] : undefined;
 
           if (from) {
-            const secondPage = await adapter.getRecords('test-bucket', { from, limit: 1 });
+            const secondPage = await adapter.getRecords('test-bucket', {
+              from,
+              limit: 1,
+            });
             expect(secondPage.records).toHaveLength(1);
           }
         }
@@ -121,7 +124,10 @@ export function createStorageInterfaceTests(
 
     describe('getRecord()', () => {
       it('should return null for non-existent record', async () => {
-        const result = await adapter.getRecord('test-bucket', 'non-existent-id');
+        const result = await adapter.getRecord(
+          'test-bucket',
+          'non-existent-id',
+        );
 
         expect(result).toBeNull();
       });

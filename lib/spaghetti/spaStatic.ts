@@ -1,8 +1,7 @@
-import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
-
-import send, { type SendOptions } from '@fastify/send';
 import { type Dirent, statSync } from 'node:fs';
 import path from 'node:path';
+import send, { type SendOptions } from '@fastify/send';
+import type { FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 
 (send.mime as unknown as { default_type: string }).default_type =
   'application/octet-stream';

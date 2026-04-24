@@ -21,7 +21,9 @@ export function createStorage(config: StorageConfig): StorageAdapter {
   switch (config.type) {
     case 'opensearch': {
       if (!config.opensearch) {
-        throw new Error('OpenSearch configuration is required for opensearch storage type');
+        throw new Error(
+          'OpenSearch configuration is required for opensearch storage type',
+        );
       }
 
       const { endpoint, index, username, password } = config.opensearch;
@@ -31,7 +33,7 @@ export function createStorage(config: StorageConfig): StorageAdapter {
         endpoint,
         index,
         auth,
-        ignoreHeaderPrefixes
+        ignoreHeaderPrefixes,
       );
     }
 
@@ -40,7 +42,9 @@ export function createStorage(config: StorageConfig): StorageAdapter {
     }
 
     default: {
-      throw new Error(`Unsupported storage type: '${config.type}'. Supported types are: opensearch, memory`);
+      throw new Error(
+        `Unsupported storage type: '${config.type}'. Supported types are: opensearch, memory`,
+      );
     }
   }
 }
@@ -64,7 +68,7 @@ export function createStorageFromEnv(): StorageAdapter {
 
     if (!endpoint || !index) {
       throw new Error(
-        'OPENSEARCH_ENDPOINT and OPENSEARCH_INDEX are required for OpenSearch storage'
+        'OPENSEARCH_ENDPOINT and OPENSEARCH_INDEX are required for OpenSearch storage',
       );
     }
 
@@ -73,12 +77,12 @@ export function createStorageFromEnv(): StorageAdapter {
 
     if (username && !password) {
       throw new Error(
-        'OPENSEARCH_USERNAME is set but OPENSEARCH_PASSWORD is not set'
+        'OPENSEARCH_USERNAME is set but OPENSEARCH_PASSWORD is not set',
       );
     }
     if (password && !username) {
       throw new Error(
-        'OPENSEARCH_PASSWORD is set but OPENSEARCH_USERNAME is not set'
+        'OPENSEARCH_PASSWORD is set but OPENSEARCH_USERNAME is not set',
       );
     }
 

@@ -4,7 +4,12 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
-    exclude: ['node_modules/**', 'dist/**', 'client/**', '**/__tests__/shared/**'],
+    exclude: [
+      'node_modules/**',
+      'dist/**',
+      'client/**',
+      '**/__tests__/shared/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
