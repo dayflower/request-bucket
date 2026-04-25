@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import type React from 'react';
 import { Link } from 'react-router';
 import type { JsonBody, RequestRecord } from '../common/types';
 
@@ -53,13 +53,15 @@ function Body({
   return null;
 }
 
-const RequestRecordComponent = forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<'div'> & {
-    record: RequestRecord & { isNew?: boolean };
-    linkToItem?: string;
-  }
->(({ record, linkToItem, ...props }, ref) => {
+function RequestRecordComponent({
+  record,
+  linkToItem,
+  ref,
+  ...props
+}: React.ComponentProps<'div'> & {
+  record: RequestRecord & { isNew?: boolean };
+  linkToItem?: string;
+}) {
   const localTimestamp = new Date(record.timestamp).toLocaleString(undefined, {
     timeZoneName: 'short',
   });
@@ -85,6 +87,6 @@ const RequestRecordComponent = forwardRef<
       />
     </div>
   );
-});
+}
 
 export default RequestRecordComponent;
