@@ -26,11 +26,20 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Docker meta
         id: meta-docker
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
-          images: ${{ vars.DOCKERHUB_USERNAME }}/request-bucket
+          images: |
+            ${{ vars.DOCKERHUB_USERNAME }}/request-bucket
+            ghcr.io/${{ github.repository_owner }}/request-bucket
           tags: |
             type=sha
             type=ref,event=branch
