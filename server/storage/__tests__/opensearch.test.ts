@@ -37,10 +37,12 @@ const mockIndex = vi.fn();
 const mockSearch = vi.fn();
 
 vi.mock('@opensearch-project/opensearch', () => ({
-  Client: vi.fn(() => ({
-    index: mockIndex,
-    search: mockSearch,
-  })),
+  Client: vi.fn(
+    class {
+      index = mockIndex;
+      search = mockSearch;
+    },
+  ),
 }));
 
 // Mock response helpers
@@ -329,7 +331,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
                 },
                 {
                   range: {
-                    id: {
+                    timestamp: {
                       lte: 'test-from-id',
                     },
                   },
@@ -366,15 +368,21 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
 
     it('should handle pagination when more records available', async () => {
       const bucket = 'test-bucket';
+      const baseTime = new Date('2026-01-01T00:00:00.000Z').getTime();
+      const mockTimestamps = Array.from({ length: 6 }, (_, i) =>
+        new Date(baseTime + i * 1000).toISOString(),
+      );
       const mockRecords = Array.from({ length: 6 }, (_, i) =>
-        createSampleRecord(`id-${i + 1}`, bucket),
+        createSampleRecord(`id-${i + 1}`, bucket, mockTimestamps[i]),
       );
       mockSearch.mockResolvedValue(createMockSearchResponse(mockRecords));
 
       const result = await adapter.getRecords(bucket, { limit: 5 });
 
       expect(result.records).toHaveLength(5);
-      expect(result.next).toBe(`/api/bucket/${bucket}/record/?from=id-6`);
+      expect(result.next).toBe(
+        `/api/bucket/${bucket}/record/?from=${mockTimestamps[5]}`,
+      );
     });
 
     it('should return empty array when OpenSearch returns error', async () => {

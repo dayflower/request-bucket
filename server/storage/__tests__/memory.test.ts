@@ -91,38 +91,39 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
 
   describe('pagination', () => {
     it('should provide correct pagination with next parameter', async () => {
-      const records = [];
-      for (let i = 1; i <= 6; i++) {
-        records.push(createSampleRecord(`test-id-${i}`, 'test-bucket'));
-      }
+      const baseTime = new Date('2026-01-01T00:00:00.000Z').getTime();
+      const records = Array.from({ length: 6 }, (_, i) =>
+        createSampleRecord(
+          `test-id-${i + 1}`,
+          'test-bucket',
+          new Date(baseTime + i * 1000).toISOString(),
+        ),
+      );
 
-      // Store all records
       for (const record of records) {
         await adapter.store(record);
       }
 
-      // Get first page with limit 2
+      // Records are sorted descending: test-id-6 (newest) ... test-id-1 (oldest)
+
       const firstPage = await adapter.getRecords('test-bucket', { limit: 2 });
 
       expect(firstPage.records).toHaveLength(2);
       expect(firstPage.next).toBeDefined();
       expect(firstPage.next).toContain('from=');
 
-      // Get second page
-      const fromMatch = firstPage.next?.match(/from=([^&]+)/);
-      const from = fromMatch?.[1];
+      // Use the timestamp of the last record on this page as the cursor
+      const from1 = firstPage.records[firstPage.records.length - 1].timestamp;
 
       const secondPage = await adapter.getRecords('test-bucket', {
-        from,
+        from: from1,
         limit: 2,
       });
 
       expect(secondPage.records).toHaveLength(2);
       expect(secondPage.next).toBeDefined();
 
-      // Get third page
-      const fromMatch2 = secondPage.next?.match(/from=([^&]+)/);
-      const from2 = fromMatch2?.[1];
+      const from2 = secondPage.records[secondPage.records.length - 1].timestamp;
 
       const thirdPage = await adapter.getRecords('test-bucket', {
         from: from2,
@@ -130,16 +131,14 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       });
 
       expect(thirdPage.records).toHaveLength(2);
-      expect(thirdPage.next).toBeUndefined(); // Last page
+      expect(thirdPage.next).toBeUndefined();
 
-      // Ensure no duplicates across pages
       const allIds = [
         ...firstPage.records.map((r) => r.id),
         ...secondPage.records.map((r) => r.id),
         ...thirdPage.records.map((r) => r.id),
       ];
-      const uniqueIds = new Set(allIds);
-      expect(uniqueIds.size).toBe(6);
+      expect(new Set(allIds).size).toBe(6);
     });
 
     it('should handle from parameter that does not exist', async () => {
