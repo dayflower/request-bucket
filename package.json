@@ -18,7 +18,7 @@
     "dev": "tsx watch --env-file=.env --ignore=./vite.config.ts* --ignore=./client --clear-screen=false server/dev.ts",
     "prod": "tsx --env-file=.env server/prod.ts",
     "build:client": "tsc --noEmit -p tsconfig.app.json && vite build --emptyOutDir",
-    "build:server": "tsc --noEmit && esbuild --bundle --external:./node_modules/* --format=esm --platform=node --target=es2022,node20 server/prod.ts --outfile=dist/index.mjs",
+    "build:server": "tsc --noEmit && esbuild --bundle --external:./node_modules/* --format=esm --platform=node --target=es2022,node24 server/prod.ts --outfile=dist/index.mjs",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
@@ -31,7 +31,7 @@
     "clean": "rm -rf dist"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {
     "@fastify/static": "^9.1.3",
@@ -46,7 +46,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
-    "@types/node": "^22.19.17",
+    "@types/node": "^24",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.1",

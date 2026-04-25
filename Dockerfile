@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM node:22-bookworm AS builder
+FROM node:24-bookworm-slim AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ RUN npm ci && npm run build:client && npm run build:server
 
 
 
-FROM node:22-bookworm AS running-env
+FROM node:24-bookworm-slim AS running-env
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN npm ci --production
 
 
 
-FROM gcr.io/distroless/nodejs22-debian12:nonroot AS runner
+FROM gcr.io/distroless/nodejs24-debian12:nonroot AS runner
 
 WORKDIR /app
 
