@@ -64,7 +64,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
     if (paginatedRecords.length > limit) {
       const lastRecord = records[records.length - 1];
       if (lastRecord?.id) {
-        next = `/api/bucket/${bucket}/record/?from=${lastRecord.id}`;
+        next = `/api/bucket/${bucket}/record/?from=${encodeURIComponent(lastRecord.timestamp)}`;
       }
     }
 

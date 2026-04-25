@@ -141,6 +141,42 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       expect(new Set(allIds).size).toBe(6);
     });
 
+    it('should include a valid decodable timestamp in next URL', async () => {
+      const baseTime = new Date('2026-01-01T00:00:00.000Z').getTime();
+      const records = Array.from({ length: 4 }, (_, i) =>
+        createSampleRecord(
+          `test-id-${i + 1}`,
+          'test-bucket',
+          new Date(baseTime + i * 1000).toISOString(),
+        ),
+      );
+      for (const record of records) {
+        await adapter.store(record);
+      }
+
+      const firstPage = await adapter.getRecords('test-bucket', { limit: 2 });
+      expect(firstPage.next).toBeDefined();
+
+      const fromMatch = firstPage.next?.match(/from=([^&]+)/);
+      const encodedFrom = fromMatch?.[1];
+      expect(encodedFrom).toBeDefined();
+
+      const from = decodeURIComponent(encodedFrom as string);
+      expect(new Date(from).toString()).not.toBe('Invalid Date');
+
+      const secondPage = await adapter.getRecords('test-bucket', {
+        from,
+        limit: 2,
+      });
+      expect(secondPage.records).toHaveLength(2);
+
+      const allIds = [
+        ...firstPage.records.map((r) => r.id),
+        ...secondPage.records.map((r) => r.id),
+      ];
+      expect(new Set(allIds).size).toBe(4);
+    });
+
     it('should handle from parameter that does not exist', async () => {
       const record = createSampleRecord('test-id-1', 'test-bucket');
       await adapter.store(record);
