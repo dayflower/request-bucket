@@ -164,7 +164,10 @@ describe('MemoryStorageAdapter - Specific Implementation', () => {
       const from = decodeURIComponent(encodedFrom as string);
       expect(new Date(from).toString()).not.toBe('Invalid Date');
 
-      const secondPage = await adapter.getRecords('test-bucket', { from, limit: 2 });
+      const secondPage = await adapter.getRecords('test-bucket', {
+        from,
+        limit: 2,
+      });
       expect(secondPage.records).toHaveLength(2);
 
       const allIds = [

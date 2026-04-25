@@ -146,8 +146,7 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
         let filteredRecords = bucketRecords;
         if (from) {
           filteredRecords = bucketRecords.filter(
-            (r) =>
-              new Date(r.timestamp).getTime() <= new Date(from).getTime(),
+            (r) => new Date(r.timestamp).getTime() <= new Date(from).getTime(),
           );
         }
 
