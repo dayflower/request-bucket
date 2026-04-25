@@ -139,22 +139,20 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
             new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
         );
 
-        const limit = body.size ? body.size - 1 : 5; // Adjust for pagination detection
         const from = filterConditions.find(
           (f): f is RangeCondition =>
             'range' in f && f.range?.timestamp !== undefined,
         )?.range?.timestamp?.lte;
         let filteredRecords = bucketRecords;
         if (from) {
-          const fromIndex = bucketRecords.findIndex(
-            (r) => r.timestamp === from,
+          filteredRecords = bucketRecords.filter(
+            (r) =>
+              new Date(r.timestamp).getTime() <= new Date(from).getTime(),
           );
-          if (fromIndex >= 0) {
-            filteredRecords = bucketRecords.slice(fromIndex + 1);
-          }
         }
 
-        const paginatedRecords = filteredRecords.slice(0, limit);
+        // Return up to body.size records so the adapter can detect pagination
+        const paginatedRecords = filteredRecords.slice(0, body.size ?? 6);
         return createMockSearchResponse(paginatedRecords);
       }
 

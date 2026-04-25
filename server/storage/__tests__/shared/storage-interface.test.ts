@@ -97,28 +97,35 @@ export function createStorageInterfaceTests(
       });
 
       it('should handle pagination with from parameter', async () => {
-        const record1 = createSampleRecord('test-id-1', 'test-bucket');
-        const record2 = createSampleRecord('test-id-2', 'test-bucket');
+        const baseTime = new Date('2026-01-01T00:00:00.000Z').getTime();
+        const record1 = createSampleRecord(
+          'test-id-1',
+          'test-bucket',
+          new Date(baseTime).toISOString(),
+        );
+        const record2 = createSampleRecord(
+          'test-id-2',
+          'test-bucket',
+          new Date(baseTime + 1000).toISOString(),
+        );
 
         await adapter.store(record1);
         await adapter.store(record2);
 
         const firstPage = await adapter.getRecords('test-bucket', { limit: 1 });
         expect(firstPage.records).toHaveLength(1);
+        expect(firstPage.next).toBeDefined();
 
-        if (firstPage.next) {
-          // Extract from parameter from next URL
-          const fromMatch = firstPage.next.match(/from=([^&]+)/);
-          const from = fromMatch ? fromMatch[1] : undefined;
+        const fromMatch = firstPage.next?.match(/from=([^&]+)/);
+        const from = fromMatch ? decodeURIComponent(fromMatch[1]) : undefined;
+        expect(from).toBeDefined();
 
-          if (from) {
-            const secondPage = await adapter.getRecords('test-bucket', {
-              from,
-              limit: 1,
-            });
-            expect(secondPage.records).toHaveLength(1);
-          }
-        }
+        const secondPage = await adapter.getRecords('test-bucket', {
+          from,
+          limit: 1,
+        });
+        expect(secondPage.records).toHaveLength(1);
+        expect(secondPage.records[0].id).not.toBe(firstPage.records[0].id);
       });
     });
 
