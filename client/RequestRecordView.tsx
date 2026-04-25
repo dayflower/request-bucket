@@ -32,6 +32,20 @@ function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (bucket) {
+      const timestamp = record
+        ? new Date(record.timestamp).toLocaleString()
+        : null;
+      document.title = timestamp
+        ? `request-bucket: ${bucket}: ${timestamp}`
+        : `request-bucket: ${bucket}`;
+    }
+    return () => {
+      document.title = 'request-bucket';
+    };
+  }, [bucket, record]);
+
   return (
     <div {...props}>
       <h1>

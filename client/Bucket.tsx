@@ -104,6 +104,15 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
     load();
   }, [load]);
 
+  useEffect(() => {
+    if (bucket) {
+      document.title = `request-bucket: ${bucket}`;
+    }
+    return () => {
+      document.title = 'request-bucket';
+    };
+  }, [bucket]);
+
   // Track page visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
