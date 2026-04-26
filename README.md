@@ -14,7 +14,7 @@ Perfect for webhook development, API testing, and debugging third-party integrat
 
 ## Prerequisites
 
-- Node.js 22+
+- [Bun](https://bun.com) 1.3+
 - OpenSearch instance (optional, defaults to in-memory storage)
 
 ## Quick Start
@@ -33,19 +33,18 @@ docker run -d \
 
 1. Install dependencies:
 ```bash
-npm install
+bun install
 ```
 
 2. Run with default in-memory storage:
 ```bash
-npm run dev
+bun run dev
 ```
 
-Or set up environment variables for OpenSearch storage (see Configuration section) and run:
+Or build the client and run in production mode (see Configuration section for OpenSearch options):
 ```bash
-npm run build:client
-npm run build:server
-npm run prod
+bun run build
+bun run start
 ```
 
 ## Usage
@@ -90,10 +89,10 @@ The application supports multiple storage backends configured via the `STORAGE_T
 
 ```bash
 # Default - no configuration required
-npm run dev
+bun run dev
 
 # Or explicitly set
-STORAGE_TYPE=memory npm run dev
+STORAGE_TYPE=memory bun run dev
 ```
 
 **Note:** In-memory storage only works with single server instances and data is lost on restart. Perfect for development and testing.
@@ -101,7 +100,7 @@ STORAGE_TYPE=memory npm run dev
 #### OpenSearch Storage
 
 ```bash
-STORAGE_TYPE=opensearch npm run dev
+STORAGE_TYPE=opensearch bun run dev
 ```
 
 Before using OpenSearch storage, create the required index with the proper mapping:

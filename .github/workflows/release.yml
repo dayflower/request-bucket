@@ -27,7 +27,7 @@ jobs:
       - name: Check if tag exists
         id: tag-check
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          VERSION=$(jq -r .version package.json)
           MAJOR_MINOR=$(echo "$VERSION" | cut -d. -f1,2)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "major_minor=$MAJOR_MINOR" >> $GITHUB_OUTPUT

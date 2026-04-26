@@ -3,6 +3,9 @@ import Bucket from './Bucket';
 import RequestRecordView from './RequestRecordView';
 import Top from './Top';
 
+const APP_VERSION = process.env.BUN_PUBLIC_APP_VERSION ?? 'unknown';
+const GIT_COMMIT = process.env.BUN_PUBLIC_GIT_COMMIT ?? 'unknown';
+
 function NotFound() {
   return (
     <div>
@@ -34,19 +37,19 @@ function App() {
         <small>
           request-bucket{' '}
           <a
-            href={`https://github.com/dayflower/request-bucket/releases/tag/v${__APP_VERSION__}`}
+            href={`https://github.com/dayflower/request-bucket/releases/tag/v${APP_VERSION}`}
             target="_blank"
             rel="noreferrer"
           >
-            v{__APP_VERSION__}
+            v{APP_VERSION}
           </a>{' '}
           (
           <a
-            href={`https://github.com/dayflower/request-bucket/commit/${__GIT_COMMIT__}`}
+            href={`https://github.com/dayflower/request-bucket/commit/${GIT_COMMIT}`}
             target="_blank"
             rel="noreferrer"
           >
-            {__GIT_COMMIT__.slice(0, 7)}
+            {GIT_COMMIT.slice(0, 7)}
           </a>
           )
         </small>

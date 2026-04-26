@@ -6,7 +6,10 @@ Dockerfile
 
 **/node_modules/
 
-# .git is intentionally included to allow vite.config.ts to embed the git commit hash at build time
+# .git is intentionally included so scripts/with-env.ts can embed the git
+# commit hash via BUN_PUBLIC_GIT_COMMIT during the client build.
 # **/.git
+
+dist/
 
 **/.vscode/*

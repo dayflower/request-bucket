@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import type { RequestRecord } from '../../../common/types';
 import { MemoryStorageAdapter } from '../memory';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
