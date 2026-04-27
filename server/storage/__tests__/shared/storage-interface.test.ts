@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import type { RequestRecord } from '../../../../common/types';
 import type { StorageAdapter } from '../../interface';
+import { createSampleRecord } from '../helpers';
 
 /**
  * Shared test suite for storage adapters to ensure they conform to the StorageAdapter interface
@@ -11,33 +11,6 @@ export function createStorageInterfaceTests(
 ) {
   describe(`${name} - StorageAdapter Interface`, () => {
     let adapter: StorageAdapter;
-
-    const createSampleRecord = (
-      id: string,
-      bucket: string,
-      timestamp?: string,
-    ): RequestRecord => ({
-      id,
-      timestamp: timestamp || new Date().toISOString(),
-      bucket,
-      request: {
-        method: 'POST',
-        protocol: 'http',
-        host: 'localhost',
-        port: 3000,
-        pathQuery: `/hook/${bucket}/test`,
-        path: `/hook/${bucket}/test`,
-        args: '/test',
-        queryString: '',
-        query: {},
-        headers: {
-          'content-type': 'application/json',
-          'user-agent': 'test-agent',
-        },
-        bodyRaw: '{"test": "data"}',
-        bodyJson: { test: 'data' },
-      },
-    });
 
     beforeEach(() => {
       adapter = createAdapter();
