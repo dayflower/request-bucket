@@ -1,5 +1,6 @@
 import type { RequestRecord } from '../../common/types';
 import type { StorageAdapter } from './interface';
+import { filterHeaders } from './utils';
 
 export class MemoryStorageAdapter implements StorageAdapter {
   private records: Map<string, RequestRecord[]> = new Map();
@@ -57,7 +58,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
     const paginatedRecords = filteredRecords.slice(0, limit + 1);
     const records = paginatedRecords
       .slice(0, limit)
-      .map((record) => this.filterHeaders(record));
+      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
 
     // Check if there are more records
     let next: string | undefined;
@@ -75,22 +76,7 @@ export class MemoryStorageAdapter implements StorageAdapter {
     const bucketRecords = this.records.get(bucket) || [];
     const record = bucketRecords.find((r) => r.id === id);
 
-    return record ? this.filterHeaders(record) : null;
-  }
-
-  private filterHeaders(item: RequestRecord): RequestRecord {
-    if (this.ignoreHeaderPrefixes.length === 0) {
-      return item;
-    }
-
-    const headers = Object.fromEntries(
-      Object.entries(item.request.headers).filter(
-        ([key]) =>
-          !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix)),
-      ),
-    );
-
-    return { ...item, request: { ...item.request, headers } };
+    return record ? filterHeaders(record, this.ignoreHeaderPrefixes) : null;
   }
 
   // Utility method for debugging/monitoring

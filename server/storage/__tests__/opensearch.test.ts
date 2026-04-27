@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { RequestRecord } from '../../../common/types';
 import type { OpenSearchStorageAdapter as OpenSearchStorageAdapterType } from '../opensearch';
+import { createSampleRecord } from './helpers';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
 
 interface TermCondition {
@@ -173,34 +174,6 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
 
 describe('OpenSearchStorageAdapter - Specific Implementation', () => {
   let adapter: OpenSearchStorageAdapterType;
-
-  const createSampleRecord = (
-    id: string,
-    bucket: string,
-    timestamp?: string,
-    headers?: Record<string, string>,
-  ): RequestRecord => ({
-    id,
-    timestamp: timestamp || new Date().toISOString(),
-    bucket,
-    request: {
-      method: 'POST',
-      protocol: 'http',
-      host: 'localhost',
-      port: 3000,
-      pathQuery: `/hook/${bucket}/test`,
-      path: `/hook/${bucket}/test`,
-      args: '/test',
-      queryString: '',
-      query: {},
-      headers: headers || {
-        'content-type': 'application/json',
-        'user-agent': 'test-agent',
-      },
-      bodyRaw: '{"test": "data"}',
-      bodyJson: { test: 'data' },
-    },
-  });
 
   beforeEach(() => {
     mockIndex.mockReset();

@@ -1,6 +1,7 @@
 import { Client } from '@opensearch-project/opensearch';
 import type { RequestRecord } from '../../common/types';
 import type { StorageAdapter } from './interface';
+import { filterHeaders } from './utils';
 
 interface SearchHit<T> {
   _id: string;
@@ -104,7 +105,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     const hits = (res.body.hits.hits as SearchHit<RequestRecord>[])
       .filter((hit) => hit._source != null)
       .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
-      .map((record) => this.filterHeaders(record));
+      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
 
     if (hits.length > limit) {
       const last = hits.pop();
@@ -156,23 +157,8 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     const records = (res.body.hits.hits as SearchHit<RequestRecord>[])
       .filter((hit) => hit._source != null)
       .map((hit) => ({ ...hit._source, _id: hit._id }) as RequestRecord)
-      .map((record) => this.filterHeaders(record));
+      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
 
     return records.length > 0 ? records[0] : null;
-  }
-
-  private filterHeaders(item: RequestRecord): RequestRecord {
-    if (this.ignoreHeaderPrefixes.length === 0) {
-      return item;
-    }
-
-    const headers = Object.fromEntries(
-      Object.entries(item.request.headers).filter(
-        ([key]) =>
-          !this.ignoreHeaderPrefixes.some((prefix) => key.startsWith(prefix)),
-      ),
-    );
-
-    return { ...item, request: { ...item.request, headers } };
   }
 }
