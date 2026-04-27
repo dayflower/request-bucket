@@ -141,6 +141,17 @@ The index mapping definition is available in [`opensearch/bucket-index.json`](op
   - Example: `x-forwarded-,cf-`
 
 
+## Logging
+
+Access logs are printed to stdout for all requests:
+
+```
+[2024-01-01T12:00:00.000Z] POST /hook/my-bucket 200 12ms
+[2024-01-01T12:00:00.001Z] GET /api/bucket/my-bucket/record/ 200 3ms
+```
+
+> **Note:** In development mode, SPA routes (`/`, `/bucket/*`, static assets) are not logged due to Bun's HTML module constraints.
+
 ## License
 
 MIT
