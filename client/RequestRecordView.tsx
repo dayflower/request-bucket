@@ -9,6 +9,7 @@ function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
     recordId: string;
   }>();
   const [record, setRecord] = useState<RequestRecord>();
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (bucket == null || recordId == null) {
@@ -20,11 +21,17 @@ function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
         method: 'GET',
       });
       if (res.ok) {
+        setError(null);
         const record = await res.json();
         setRecord(record);
+      } else if (res.status === 404) {
+        setError('Record not found.');
+      } else {
+        setError('Failed to load record from storage.');
       }
     } catch (err) {
       console.error(err);
+      setError('Failed to load record from storage.');
     }
   }, [bucket, recordId]);
 
@@ -54,6 +61,8 @@ function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
       </h1>
 
       <h2>Request</h2>
+
+      {error && <p className="error-message">{error}</p>}
 
       {record && (
         <RequestRecordComponent

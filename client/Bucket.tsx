@@ -13,6 +13,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
   const [isPollingEnabled, setIsPollingEnabled] = useState(false);
   const [latestTimestamp, setLatestTimestamp] = useState<string | null>(null);
   const [isTabVisible, setIsTabVisible] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const loadedRef = useRef<HTMLDivElement>(null);
 
   const hasRecords = records != null && records.length > 0;
@@ -30,6 +31,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
           method: 'GET',
         });
         if (res.ok) {
+          setError(null);
           const body = await res.json();
 
           const loaded = body.records;
@@ -61,9 +63,12 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
               });
             }, 100);
           }
+        } else {
+          setError('Failed to load records from storage.');
         }
       } catch (err) {
         console.error(err);
+        setError('Failed to load records from storage.');
       }
     },
     [bucket],
@@ -82,6 +87,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
         },
       );
       if (res.ok) {
+        setError(null);
         const body = await res.json();
         const newRecords = body.records;
 
@@ -94,9 +100,12 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
 
           setLatestTimestamp(newRecords[0].timestamp);
         }
+      } else {
+        setError('Auto-refresh failed: storage error.');
       }
     } catch (err) {
       console.error('Polling error:', err);
+      setError('Auto-refresh failed: storage error.');
     }
   }, [bucket, latestTimestamp, isPollingEnabled]);
 
@@ -142,6 +151,8 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
       <h1>
         <Link to="/">request bucket</Link>: {bucket}
       </h1>
+
+      {error && <p className="error-message">{error}</p>}
 
       <div className="controls">
         <button type="button" onClick={() => load()}>
