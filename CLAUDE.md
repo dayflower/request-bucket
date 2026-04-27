@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Request-bucket is a self-hosted webhook inspection tool built with Node.js, TypeScript, React, and OpenSearch. It captures HTTP requests for analysis and debugging, similar to RequestBin.
+Request-bucket is a self-hosted webhook inspection tool built with Bun, TypeScript, React, and OpenSearch. It captures HTTP requests for analysis and debugging, similar to RequestBin.
 
 ## Key Architecture
 
-- **Server**: Fastify-based API server with pluggable storage backend
-- **Client**: React SPA with React Router for the web interface
+- **Runtime**: [Bun](https://bun.com) — runs TypeScript directly, bundles the client, and serves both API and SPA from a single `Bun.serve` process
+- **Server**: `server/index.ts` wires `Bun.serve` routes for `/api/*`, `/hook/*`, and SPA fallback
+- **Client**: React 19 SPA with React Router 7
 - **Common**: Shared TypeScript types between client and server
-- **Spaghetti**: Custom framework for integrating server and SPA builds
 - **Storage**: Abstracted storage layer supporting OpenSearch and in-memory storage
 
 ## Storage Configuration
@@ -31,51 +31,57 @@ Note: Only works with single server instances, data is lost on restart.
 
 ### Common Environment Variables
 - `IGNORE_HEADER_PREFIX`: (optional) Comma-separated header prefixes to filter
+- `PORT`: (optional) Server port, defaults to 3000
 
 ## Development Commands
 
 ```bash
-# Development server with hot reload
-npm run dev
+# Development server with hot module reload
+bun run dev
 
-# Production build and run
-npm run build:client
-npm run build:server
-npm run prod
+# Build the client SPA into dist/public/
+bun run build
 
-# Testing (using Vitest)
-npm test                # Run tests once
-npm run test:watch      # Run tests in watch mode
-npm run test:coverage   # Run tests with coverage report
+# Production server (serves dist/public/ as static SPA)
+bun run start
+
+# Tests (Bun's built-in runner)
+bun test                # Run tests once
+bun run test:watch      # Run tests in watch mode
+bun run test:coverage   # Run tests with coverage report
+
+# Type check
+bun run typecheck
 
 # Check and fix (using Biome)
-npm run check           # Check for issues
-npm run fix             # Check and auto-fix issues
+bun run check           # Check for issues
+bun run fix             # Check and auto-fix issues
 
 # Clean build artifacts
-npm run clean
-
-# Preview built client
-npm run preview
+bun run clean
 ```
 
 ## Build Process
 
-The project uses a dual-build approach:
-1. **Client**: Vite builds React SPA to `dist/`
-2. **Server**: esbuild bundles server code to `dist/index.mjs`
+- **Dev**: `bun --hot server/index.ts` runs the server and bundles `client/index.html` on the fly with HMR. No separate dev server.
+- **Prod build**: `bun build ./client/index.html --outdir=dist/public` produces the static SPA bundle.
+- **Prod run**: `NODE_ENV=production bun server/index.ts` serves API routes plus `dist/public/` with SPA fallback.
+
+`scripts/with-env.ts` injects `BUN_PUBLIC_APP_VERSION` and `BUN_PUBLIC_GIT_COMMIT` into the environment so the frontend can reference them via `process.env` at bundle time. `bunfig.toml` enables `BUN_PUBLIC_*` exposure.
 
 ## Key File Structure
 
-- `server/main.ts`: Core Fastify routes using storage abstraction
+- `server/index.ts`: `Bun.serve` entry — binds storage, registers routes, handles graceful shutdown
+- `server/routes/hook.ts`: `/hook/*` webhook capture handler
+- `server/routes/api.ts`: `/api/bucket/:bucket/record/...` read API handlers
+- `server/static.ts`: Production static file handler with SPA fallback to `dist/public/index.html`
 - `server/storage/`: Storage abstraction layer
   - `interface.ts`: Storage adapter interface
-  - `factory.ts`: Storage factory and configuration
+  - `factory.ts`: Storage factory reading `STORAGE_TYPE` and friends
   - `opensearch.ts`: OpenSearch storage implementation
   - `memory.ts`: In-memory storage implementation
-- `client/`: React components and SPA logic
+- `client/`: React components and SPA logic (entry: `client/index.html` → `client/main.tsx`)
 - `common/types.ts`: Shared TypeScript types (`RequestRecord`, `JsonBody`)
-- `lib/spaghetti/`: Custom framework for server/client integration
 - `opensearch/bucket-index.json`: OpenSearch index mapping definition
 
 ## Data Flow

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'bun:test';
 import type { RequestRecord } from '../../../../common/types';
 import type { StorageAdapter } from '../../interface';
 
@@ -47,15 +47,15 @@ export function createStorageInterfaceTests(
       it('should store a record successfully', async () => {
         const record = createSampleRecord('test-id-1', 'test-bucket');
 
-        await expect(adapter.store(record)).resolves.not.toThrow();
+        await expect(adapter.store(record)).resolves.toBeUndefined();
       });
 
       it('should store multiple records', async () => {
         const record1 = createSampleRecord('test-id-1', 'test-bucket');
         const record2 = createSampleRecord('test-id-2', 'test-bucket');
 
-        await expect(adapter.store(record1)).resolves.not.toThrow();
-        await expect(adapter.store(record2)).resolves.not.toThrow();
+        await expect(adapter.store(record1)).resolves.toBeUndefined();
+        await expect(adapter.store(record2)).resolves.toBeUndefined();
       });
     });
 

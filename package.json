@@ -15,48 +15,31 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env --ignore=./vite.config.ts* --ignore=./client --clear-screen=false server/dev.ts",
-    "prod": "tsx --env-file=.env server/prod.ts",
-    "build:client": "tsc --noEmit -p tsconfig.app.json && vite build --emptyOutDir",
-    "build:server": "tsc --noEmit && esbuild --bundle --external:./node_modules/* --format=esm --platform=node --target=es2022,node24 server/prod.ts --outfile=dist/index.mjs",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "typecheck": "npm run typecheck:client && npm run typecheck:server",
-    "typecheck:client": "tsc --noEmit -p tsconfig.app.json",
-    "typecheck:server": "tsc --noEmit",
+    "dev": "bun scripts/with-env.ts bun --hot server/index.ts",
+    "start": "NODE_ENV=production bun server/index.ts",
+    "build": "bun scripts/with-env.ts bun scripts/build.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit",
     "check": "biome check .",
     "fix": "biome check --write .",
-    "preview": "vite preview",
     "clean": "rm -rf dist"
   },
-  "engines": {
-    "node": ">=24"
-  },
   "dependencies": {
-    "@fastify/static": "^9.1.3",
     "@opensearch-project/opensearch": "^3.5.1",
     "base-x": "^5.0.1",
-    "fastify": "^5.8.5",
-    "fastify-graceful-shutdown": "^5.0.0",
-    "fastify-raw-body": "^5.0.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-router": "^7.14.2",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
-    "@types/node": "^24",
+    "@types/bun": "latest",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.1.5",
-    "esbuild": "^0.28.0",
     "globals": "^17.5.0",
-    "react-router": "^7.14.2",
-    "tsx": "^4.21.0",
-    "typescript": "~6.0.3",
-    "vite": "^8.0.10",
-    "vitest": "^4.1.5"
+    "typescript": "~6.0.3"
   }
 }

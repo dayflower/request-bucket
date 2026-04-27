@@ -1,37 +1,32 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-trixie-slim AS builder
+FROM oven/bun:1-debian AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends git
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY . .
 
-RUN npm ci && npm run build:client && npm run build:server
+RUN bun install --frozen-lockfile \
+ && bun run build
 
 
 
-FROM node:24-trixie-slim AS running-env
-
-WORKDIR /app
-
-COPY package.json package-lock.json ./
-
-RUN npm ci --production
-
-
-
-FROM gcr.io/distroless/nodejs24-debian13:nonroot AS runner
+FROM oven/bun:1-distroless AS runner
 
 WORKDIR /app
 
-COPY --from=running-env /app/node_modules ./node_modules
-COPY --from=builder /app/dist/ ./dist/
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/common ./common
+COPY --from=builder /app/dist/public ./dist/public
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 ENV NODE_ENV=production
 
 EXPOSE 3000
 
-ENTRYPOINT [ "/nodejs/bin/node" ]
-CMD [ "dist/index.mjs" ]
+CMD ["server/index.ts"]

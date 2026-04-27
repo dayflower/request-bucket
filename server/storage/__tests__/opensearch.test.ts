@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { RequestRecord } from '../../../common/types';
-import { OpenSearchStorageAdapter } from '../opensearch';
+import type { OpenSearchStorageAdapter as OpenSearchStorageAdapterType } from '../opensearch';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
 
 interface TermCondition {
@@ -32,18 +32,23 @@ interface SearchRequestBody {
   sort?: Array<Record<string, { order: string }>>;
 }
 
-// Mock the OpenSearch client
-const mockIndex = vi.fn();
-const mockSearch = vi.fn();
+// Mock the OpenSearch client. The signature is intentionally permissive so
+// individual tests can swap in implementations and resolved/rejected values
+// without fighting the compiler.
+// biome-ignore lint/suspicious/noExplicitAny: mock signatures need to accept any caller args
+type AnyAsync = (...args: any[]) => any;
+const mockIndex = mock<AnyAsync>();
+const mockSearch = mock<AnyAsync>();
 
-vi.mock('@opensearch-project/opensearch', () => ({
-  Client: vi.fn(
-    class {
-      index = mockIndex;
-      search = mockSearch;
-    },
-  ),
+mock.module('@opensearch-project/opensearch', () => ({
+  Client: class {
+    index = mockIndex;
+    search = mockSearch;
+  },
 }));
+
+// Import after mock.module so the adapter picks up the mocked client.
+const { OpenSearchStorageAdapter } = await import('../opensearch');
 
 // Mock response helpers
 const createMockIndexResponse = (statusCode: number = 201) => ({
@@ -167,7 +172,7 @@ createStorageInterfaceTests('OpenSearchStorageAdapter', () => {
 });
 
 describe('OpenSearchStorageAdapter - Specific Implementation', () => {
-  let adapter: OpenSearchStorageAdapter;
+  let adapter: OpenSearchStorageAdapterType;
 
   const createSampleRecord = (
     id: string,
@@ -198,8 +203,8 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
   });
 
   beforeEach(() => {
-    // Reset all mocks before each test
-    vi.clearAllMocks();
+    mockIndex.mockReset();
+    mockSearch.mockReset();
 
     adapter = new OpenSearchStorageAdapter(
       'https://test-opensearch:9200',
@@ -254,7 +259,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       const record = createSampleRecord('test-id-1', 'test-bucket');
       mockIndex.mockResolvedValue(createMockIndexResponse(201));
 
-      await expect(adapter.store(record)).resolves.not.toThrow();
+      await expect(adapter.store(record)).resolves.toBeUndefined();
     });
 
     it('should throw error when index fails', async () => {
