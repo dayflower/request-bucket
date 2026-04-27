@@ -19,6 +19,12 @@
     "noUnusedParameters": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["client/**/*", "server/**/*", "common/**/*", "scripts/**/*", "bun-env.d.ts"],
+  "include": [
+    "client/**/*",
+    "server/**/*",
+    "common/**/*",
+    "scripts/**/*",
+    "bun-env.d.ts"
+  ],
   "exclude": ["dist", "node_modules"]
 }
