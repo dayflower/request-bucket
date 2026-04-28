@@ -27,6 +27,13 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     this.ignoreHeaderPrefixes = ignoreHeaderPrefixes;
   }
 
+  private parseHits(rawHits: unknown): RequestRecord[] {
+    return (rawHits as SearchHit<RequestRecord>[])
+      .filter((hit) => hit._source != null)
+      .map((hit) => hit._source as RequestRecord)
+      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
+  }
+
   async store(record: RequestRecord): Promise<void> {
     const res = await this.client.index({
       index: this.index,
@@ -102,10 +109,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       return { records: [] };
     }
 
-    const hits = (res.body.hits.hits as SearchHit<RequestRecord>[])
-      .filter((hit) => hit._source != null)
-      .map((hit) => hit._source as RequestRecord)
-      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
+    const hits = this.parseHits(res.body.hits.hits);
 
     if (hits.length > limit) {
       const last = hits.pop();
@@ -154,10 +158,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
       return null;
     }
 
-    const records = (res.body.hits.hits as SearchHit<RequestRecord>[])
-      .filter((hit) => hit._source != null)
-      .map((hit) => hit._source as RequestRecord)
-      .map((record) => filterHeaders(record, this.ignoreHeaderPrefixes));
+    const records = this.parseHits(res.body.hits.hits);
 
     return records.length > 0 ? records[0] : null;
   }
