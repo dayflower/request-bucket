@@ -3,7 +3,7 @@ import { withLogging } from './middleware/logging';
 import { createGetRecordHandler, createGetRecordsHandler } from './routes/api';
 import { createHookHandler } from './routes/hook';
 import { staticHandler } from './static';
-import { createStorageFromEnv } from './storage/factory';
+import { createStorageFromEnv } from './storage';
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = Number(process.env.PORT ?? 3000);
