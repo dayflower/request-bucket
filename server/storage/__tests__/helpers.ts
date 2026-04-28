@@ -1,4 +1,19 @@
 import type { RequestRecord } from '../../../common/types';
+import { MemoryStorageAdapter } from '../memory';
+
+export class TestableMemoryStorageAdapter extends MemoryStorageAdapter {
+  getBucketStats(): { [bucket: string]: number } {
+    const stats: { [bucket: string]: number } = {};
+    for (const [bucket, records] of this.records) {
+      stats[bucket] = records.length;
+    }
+    return stats;
+  }
+
+  clear(): void {
+    this.records.clear();
+  }
+}
 
 export const createSampleRecord = (
   id: string,
