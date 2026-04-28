@@ -1,4 +1,4 @@
-import type { StorageAdapter } from '../storage/interface';
+import type { StorageAdapter } from '../storage';
 
 const ITEMS_PER_PAGE = 5;
 

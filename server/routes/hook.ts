@@ -1,6 +1,6 @@
 import { Buffer, isUtf8 } from 'node:buffer';
 import type { JsonBody, RequestRecord } from '../../common/types';
-import type { StorageAdapter } from '../storage/interface';
+import type { StorageAdapter } from '../storage';
 import { uuid58 } from '../uuid58';
 
 const parseRequestBody = (
@@ -31,6 +31,8 @@ const parseRequestBody = (
   return { bodyRaw };
 };
 
+// TODO: does not handle bare IPv6 addresses like [::1] (no port). lastIndexOf(':')
+// misidentifies the final ':' inside brackets as a port separator, yielding a wrong host.
 const parseHostHeader = (
   hostHeader: string | null,
   fallbackHost: string,
@@ -81,10 +83,7 @@ export const createHookHandler = (storage: StorageAdapter) => {
 
     const rawBody = Buffer.from(await req.arrayBuffer());
 
-    const headers: Record<string, string> = {};
-    req.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
+    const headers: Record<string, string> = Object.fromEntries(req.headers);
 
     const id = uuid58();
 
@@ -99,7 +98,7 @@ export const createHookHandler = (storage: StorageAdapter) => {
         port,
         pathQuery,
         path,
-        args: ['', ...paths.slice(1)].join('/'),
+        args: `/${paths.slice(1).join('/')}`,
         queryString,
         query: Object.fromEntries(url.searchParams),
         headers,
