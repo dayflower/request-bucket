@@ -68,7 +68,6 @@ function RequestRecordView({ ...props }: React.ComponentProps<'div'>) {
         <RequestRecordComponent
           key={record.id}
           id={record.id}
-          data-osid={record._id}
           record={record}
         />
       )}

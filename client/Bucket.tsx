@@ -72,7 +72,6 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
           ref={record.loaded ? loadedRef : undefined}
           key={record.id}
           id={record.id}
-          data-osid={record._id}
           record={record}
           linkToItem={`/bucket/${record.bucket}/${record.id}`}
         />
