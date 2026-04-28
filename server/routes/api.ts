@@ -20,7 +20,10 @@ export const createGetRecordsHandler = (storage: StorageAdapter) => {
       return Response.json(result);
     } catch (error) {
       console.error('Failed to get records:', error);
-      return Response.json({ records: [] });
+      return Response.json(
+        { message: 'Internal server error' },
+        { status: 500 },
+      );
     }
   };
 };
@@ -39,7 +42,10 @@ export const createGetRecordHandler = (storage: StorageAdapter) => {
       return Response.json(record);
     } catch (error) {
       console.error('Failed to get record:', error);
-      return Response.json({ message: 'Record not found' }, { status: 404 });
+      return Response.json(
+        { message: 'Internal server error' },
+        { status: 500 },
+      );
     }
   };
 };

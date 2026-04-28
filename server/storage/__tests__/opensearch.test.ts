@@ -360,13 +360,13 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       );
     });
 
-    it('should return empty array when OpenSearch returns error', async () => {
+    it('should throw when OpenSearch returns error', async () => {
       const bucket = 'test-bucket';
       mockSearch.mockResolvedValue(createMockErrorResponse(404));
 
-      const result = await adapter.getRecords(bucket);
-
-      expect(result.records).toEqual([]);
+      await expect(adapter.getRecords(bucket)).rejects.toThrow(
+        'OpenSearch error: 404',
+      );
     });
 
     it('should handle OpenSearch client errors gracefully', async () => {
@@ -434,14 +434,14 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null when OpenSearch returns error', async () => {
+    it('should throw when OpenSearch returns error', async () => {
       const bucket = 'test-bucket';
       const id = 'test-id';
       mockSearch.mockResolvedValue(createMockErrorResponse(404));
 
-      const result = await adapter.getRecord(bucket, id);
-
-      expect(result).toBeNull();
+      await expect(adapter.getRecord(bucket, id)).rejects.toThrow(
+        'OpenSearch error: 404',
+      );
     });
 
     it('should return null when response has malformed structure', async () => {
@@ -692,7 +692,7 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
       await expect(adapter.store(record)).rejects.toThrow('ETIMEDOUT');
     });
 
-    it('should handle authentication errors', async () => {
+    it('should throw on authentication errors', async () => {
       const bucket = 'test-bucket';
       mockSearch.mockResolvedValue({
         statusCode: 401,
@@ -704,12 +704,12 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         },
       });
 
-      const result = await adapter.getRecords(bucket);
-
-      expect(result.records).toEqual([]);
+      await expect(adapter.getRecords(bucket)).rejects.toThrow(
+        'OpenSearch error: 401',
+      );
     });
 
-    it('should handle index not found errors', async () => {
+    it('should throw on index not found errors', async () => {
       const bucket = 'test-bucket';
       mockSearch.mockResolvedValue({
         statusCode: 404,
@@ -721,9 +721,9 @@ describe('OpenSearchStorageAdapter - Specific Implementation', () => {
         },
       });
 
-      const result = await adapter.getRecords(bucket);
-
-      expect(result.records).toEqual([]);
+      await expect(adapter.getRecords(bucket)).rejects.toThrow(
+        'OpenSearch error: 404',
+      );
     });
   });
 

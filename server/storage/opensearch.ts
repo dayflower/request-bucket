@@ -94,7 +94,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     });
 
     if (res.statusCode !== 200) {
-      return { records: [] };
+      throw new Error(`OpenSearch error: ${res.statusCode}`);
     }
 
     // Handle malformed response
@@ -146,7 +146,7 @@ export class OpenSearchStorageAdapter implements StorageAdapter {
     });
 
     if (res.statusCode !== 200) {
-      return null;
+      throw new Error(`OpenSearch error: ${res.statusCode}`);
     }
 
     // Handle malformed response
