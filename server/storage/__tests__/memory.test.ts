@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
 import { MemoryStorageAdapter } from '../memory';
-import { createSampleRecord } from './helpers';
+import { createSampleRecord, TestableMemoryStorageAdapter } from './helpers';
 import { createStorageInterfaceTests } from './shared/storage-interface.test';
 
 // Run shared interface tests
@@ -10,10 +10,10 @@ createStorageInterfaceTests(
 );
 
 describe('MemoryStorageAdapter - Specific Implementation', () => {
-  let adapter: MemoryStorageAdapter;
+  let adapter: TestableMemoryStorageAdapter;
 
   beforeEach(() => {
-    adapter = new MemoryStorageAdapter();
+    adapter = new TestableMemoryStorageAdapter();
   });
 
   describe('constructor', () => {

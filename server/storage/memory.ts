@@ -3,7 +3,7 @@ import type { StorageAdapter } from './interface';
 import { filterHeaders } from './utils';
 
 export class MemoryStorageAdapter implements StorageAdapter {
-  private records: Map<string, RequestRecord[]> = new Map();
+  protected records: Map<string, RequestRecord[]> = new Map();
   private ignoreHeaderPrefixes: string[];
 
   constructor(ignoreHeaderPrefixes: string[] = []) {
@@ -78,17 +78,4 @@ export class MemoryStorageAdapter implements StorageAdapter {
     return record ? filterHeaders(record, this.ignoreHeaderPrefixes) : null;
   }
 
-  // Utility method for debugging/monitoring
-  getBucketStats(): { [bucket: string]: number } {
-    const stats: { [bucket: string]: number } = {};
-    for (const [bucket, records] of this.records) {
-      stats[bucket] = records.length;
-    }
-    return stats;
-  }
-
-  // Clear all data (useful for testing)
-  clear(): void {
-    this.records.clear();
-  }
 }
