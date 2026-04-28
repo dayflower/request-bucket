@@ -20,11 +20,11 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   exit 1
 fi
 
-NEW_VERSION=$(bun version "$BUMP" | sed 's/^v//')
+NEW_VERSION=$(npm version "$BUMP" | sed 's/^v//')
 BRANCH="release/v${NEW_VERSION}"
 
 git checkout -b "$BRANCH"
-git add package.json bun.lock
+git add package.json
 git commit -m "chore: bump version to v${NEW_VERSION}"
 git push origin "$BRANCH"
 
