@@ -1,150 +1,36 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import type { RequestRecord } from '../common/types';
+import { useBucketRecords } from './hooks/useBucketRecords';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
+import { usePolling } from './hooks/usePolling';
+import { useTabVisibility } from './hooks/useTabVisibility';
 import RecordingGuide from './RecordingGuide';
 import RequestRecordComponent from './RequestRecordComponent';
 
 function Bucket({ ...props }: React.ComponentProps<'div'>) {
   const { bucket } = useParams<{ bucket: string }>();
-  const [records, setRecords] = useState<
-    (RequestRecord & { loaded?: boolean; isNew?: boolean })[]
-  >([]);
-  const [nextLink, setNextLink] = useState<string | null>(null);
+
+  const {
+    records,
+    nextLink,
+    latestTimestamp,
+    error,
+    loadedRef,
+    load,
+    pollNewRecords,
+  } = useBucketRecords(bucket);
+
   const [isPollingEnabled, setIsPollingEnabled] = useState(false);
-  const [latestTimestamp, setLatestTimestamp] = useState<string | null>(null);
-  const [isTabVisible, setIsTabVisible] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const loadedRef = useRef<HTMLDivElement>(null);
+  const isTabVisible = useTabVisibility();
 
-  const hasRecords = records != null && records.length > 0;
-
-  const load = useCallback(
-    async (from: string | undefined = undefined) => {
-      if (bucket == null) {
-        return;
-      }
-
-      const uri = from ?? `/api/bucket/${bucket}/record/`;
-
-      try {
-        const res = await fetch(uri, {
-          method: 'GET',
-        });
-        if (res.ok) {
-          setError(null);
-          const body = await res.json();
-
-          const loaded = body.records;
-          setRecords((prev) => {
-            const items = from != null ? [...prev, ...loaded] : loaded;
-            if (from != null) {
-              items[prev.length].loaded = true;
-            }
-            return items;
-          });
-
-          if (loaded.length > 0 && from == null) {
-            setLatestTimestamp(loaded[0].timestamp);
-          } else if (loaded.length === 0 && from == null) {
-            setLatestTimestamp(new Date().toISOString());
-          }
-
-          if (body.next != null) {
-            setNextLink(body.next);
-          } else {
-            setNextLink(null);
-          }
-
-          if (from != null) {
-            setTimeout(() => {
-              loadedRef.current?.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start',
-              });
-            }, 100);
-          }
-        } else {
-          setError('Failed to load records from storage.');
-        }
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load records from storage.');
-      }
-    },
-    [bucket],
+  useDocumentTitle(bucket ? `request-bucket: ${bucket}` : null);
+  usePolling(
+    pollNewRecords,
+    5000,
+    isPollingEnabled && !!latestTimestamp && isTabVisible,
   );
 
-  const pollNewRecords = useCallback(async () => {
-    if (!bucket || !latestTimestamp || !isPollingEnabled) {
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `/api/bucket/${bucket}/record/?since=${encodeURIComponent(latestTimestamp)}`,
-        {
-          method: 'GET',
-        },
-      );
-      if (res.ok) {
-        setError(null);
-        const body = await res.json();
-        const newRecords = body.records;
-
-        if (newRecords.length > 0) {
-          const markedRecords = newRecords.map((r: RequestRecord) => ({
-            ...r,
-            isNew: true,
-          }));
-          setRecords((prev) => [...markedRecords, ...prev]);
-
-          setLatestTimestamp(newRecords[0].timestamp);
-        }
-      } else {
-        setError('Auto-refresh failed: storage error.');
-      }
-    } catch (err) {
-      console.error('Polling error:', err);
-      setError('Auto-refresh failed: storage error.');
-    }
-  }, [bucket, latestTimestamp, isPollingEnabled]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  useEffect(() => {
-    if (bucket) {
-      document.title = `request-bucket: ${bucket}`;
-    }
-    return () => {
-      document.title = 'request-bucket';
-    };
-  }, [bucket]);
-
-  // Track page visibility
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsTabVisible(!document.hidden);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // Polling effect
-  useEffect(() => {
-    if (!isPollingEnabled || !latestTimestamp || !isTabVisible) {
-      return;
-    }
-
-    const intervalId = setInterval(pollNewRecords, 5000); // Poll every 5 seconds
-
-    return () => clearInterval(intervalId);
-  }, [latestTimestamp, isPollingEnabled, isTabVisible, pollNewRecords]);
+  const hasRecords = records.length > 0;
 
   return (
     <div {...props}>
@@ -181,7 +67,7 @@ function Bucket({ ...props }: React.ComponentProps<'div'>) {
 
       {hasRecords && <h2>Requests</h2>}
 
-      {records?.map((record) => (
+      {records.map((record) => (
         <RequestRecordComponent
           ref={record.loaded ? loadedRef : undefined}
           key={record.id}
