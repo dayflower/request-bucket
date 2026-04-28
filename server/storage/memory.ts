@@ -77,5 +77,4 @@ export class MemoryStorageAdapter implements StorageAdapter {
 
     return record ? filterHeaders(record, this.ignoreHeaderPrefixes) : null;
   }
-
 }
