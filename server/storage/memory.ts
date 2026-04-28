@@ -20,10 +20,9 @@ export class MemoryStorageAdapter implements StorageAdapter {
     const bucketRecords = this.records.get(bucket) as RequestRecord[];
     bucketRecords.push(record);
 
-    // Sort by timestamp descending to maintain order
-    bucketRecords.sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+    // ISO 8601 strings are lexicographically orderable, no Date parsing needed
+    bucketRecords.sort((a, b) =>
+      b.timestamp > a.timestamp ? 1 : b.timestamp < a.timestamp ? -1 : 0,
     );
   }
 
