@@ -3,6 +3,7 @@ import type { StorageAdapter } from './interface';
 import { filterHeaders } from './utils';
 
 export class MemoryStorageAdapter implements StorageAdapter {
+  // protected to allow test subclasses (e.g. TestableMemoryStorageAdapter) to access internals
   protected records: Map<string, RequestRecord[]> = new Map();
   private ignoreHeaderPrefixes: string[];
 
