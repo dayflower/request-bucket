@@ -1,4 +1,5 @@
 import { serve } from 'bun';
+import { withLogging } from './middleware/logging';
 import { createGetRecordHandler, createGetRecordsHandler } from './routes/api';
 import { createHookHandler } from './routes/hook';
 import { staticHandler } from './static';
@@ -14,27 +15,11 @@ const getRecords = createGetRecordsHandler(storage);
 const getRecord = createGetRecordHandler(storage);
 
 // In dev, Bun bundles client/index.html (and its <script> graph) on the fly
-// with HMR. In prod, we serve the pre-built artifacts under dist/public/.
+// with HMR and logs requests itself — withLogging is not applied.
+// In prod, we serve the pre-built artifacts under dist/public/ with withLogging.
 const spaRoute = dev
   ? (await import('../client/index.html')).default
   : withLogging(staticHandler);
-
-function withLogging<T extends Request>(
-  handler: (req: T) => Promise<Response>,
-): (req: T) => Promise<Response> {
-  return async (req: T): Promise<Response> => {
-    const start = performance.now();
-    const response = await handler(req);
-    const elapsed = (performance.now() - start).toFixed(0);
-    const url = new URL(req.url);
-    const path = url.pathname + url.search;
-    const ts = new Date().toISOString();
-    console.log(
-      `[${ts}] ${req.method} ${path} ${response.status} ${elapsed}ms`,
-    );
-    return response;
-  };
-}
 
 const server = serve({
   port,
