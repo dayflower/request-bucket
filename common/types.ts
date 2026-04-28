@@ -8,7 +8,6 @@ export type JsonBody =
 
 export type RequestRecord = {
   id?: string;
-  _id?: string;
   timestamp: string;
   bucket: string;
   request: {
