@@ -20,7 +20,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   exit 1
 fi
 
-NEW_VERSION=$(npm version "$BUMP" | sed 's/^v//')
+NEW_VERSION=$(npm version "$BUMP" --no-git-tag-version | sed 's/^v//')
 BRANCH="release/v${NEW_VERSION}"
 
 git checkout -b "$BRANCH"
